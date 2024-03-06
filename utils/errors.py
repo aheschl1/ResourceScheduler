@@ -12,3 +12,24 @@ class InternalResponseError(Exception):
 
     def __str__(self):
         return f"InternalResponseError: {self._message}"
+
+
+class RoutingError(Exception):
+    def __init__(self, message: str = ""):
+        self._message = message
+
+    def __str__(self):
+        return f"RoutingError: {self._message}"
+
+
+class BottomOfRequestError(Exception):
+    def __str__(self):
+        return f'BottomOfRequestError'
+
+
+class RejectedRequestError(Exception):
+    def __init__(self, message: str = ""):
+        self._message = message
+
+    def __str__(self):
+        return f'RejectedRequestError: {self._message}'
