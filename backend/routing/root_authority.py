@@ -28,4 +28,5 @@ class RootAuthority:
         organization_names = [x.split('_')[-1] for x in organizations]
         if self._root_name not in organization_names:
             raise RoutingError(f"Root {self._root_name} does not exist")
-        return GenerateEntities.generate_entity_from_json_path(f"{TEMPORARY_DATA_ROOT}/organization_{self._root_name}.json")
+        return (GenerateEntities
+                .generate_entity_from_json_path(f"{TEMPORARY_DATA_ROOT}/organization_{self._root_name}/entity_definition.json"))

@@ -55,7 +55,7 @@ class RequestParser:
         :return: next route
         """
         chunks = self._consumable_path.split(".")
-        if len(chunks) == 0:
+        if len(chunks) == 0 or (len(chunks) == 1 and len(chunks[0]) == 0):
             raise BottomOfRequestError()
         next_route = chunks[0]
         self._consumable_path = '.'.join(chunks[1:])

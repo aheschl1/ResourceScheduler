@@ -1,3 +1,8 @@
 {
-    "message": "Hello World!"
+    "authorization": "trust me, I don't hack",
+    "request": "uofc.ARC.GPU.v100",
+    "data":{
+        "start_time": "just gimme",
+        "end_time": "don't take it away ever"
+    }
 }

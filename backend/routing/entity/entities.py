@@ -1,4 +1,4 @@
-from typing import Union, Dict, List
+from typing import Union, Dict, List, Tuple
 
 from backend.requests.request_validation import RequestParser, BottomOfRequestError
 from backend.routing.entity.policy import Policy
@@ -53,9 +53,9 @@ class RoutingEntity(Entity):
     def handle_bottom_of_tree(self, request: RequestParser) -> Dict:
         raise RoutingError(f"{self.name} is a routing entity, and should not be a leaf")
 
-    def validate_request(self, request: RequestParser) -> Union[bool, str]:
+    def validate_request(self, request: RequestParser) -> Tuple[bool, str]:
         # TODO probably use the policy
-        return True
+        return True, "allowed"
 
 
 class SlottedEntity(Entity):
@@ -64,15 +64,17 @@ class SlottedEntity(Entity):
 
     def _manage_slot_request(self, request: RequestParser) -> Dict:
         # TODO do stuff
-        ...
+        return {
+            "result":"ok"
+        }
 
     def handle_bottom_of_tree(self, request: RequestParser) -> Dict:
         result = self._manage_slot_request(request)
         return result
 
-    def validate_request(self, request: RequestParser) -> Union[bool, str]:
+    def validate_request(self, request: RequestParser) -> Tuple[bool, str]:
         # TODO probably use the policy
-        return True
+        return True, "allowed"
 
 
 class TicketedEntity(Entity):
@@ -81,15 +83,17 @@ class TicketedEntity(Entity):
 
     def _manage_ticket_request(self, request: RequestParser) -> Dict:
         # TODO do stuff
-        ...
+        return {
+            "result": "ok"
+        }
 
     def handle_bottom_of_tree(self, request: RequestParser) -> Dict:
         result = self._manage_ticket_request(request)
         return result
 
-    def validate_request(self, request: RequestParser) -> Union[bool, str]:
+    def validate_request(self, request: RequestParser) -> Tuple[bool, str]:
         # TODO probably use the policy
-        return True
+        return True, "allowed"
 
 
 def get_entity_class_from_type_string(type_string: str) -> Entity:

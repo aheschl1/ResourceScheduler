@@ -20,7 +20,7 @@ class ClientConnection:
         :return:
         """
         data = self._socket.recv(self._buffer_size)
-        print(f"Received {data.decode()}. Processing request")
+        print(f"Received {data.decode()}\nProcessing request")
         if not data:
             return
         request_parser = RequestParser(data)
