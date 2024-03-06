@@ -33,11 +33,10 @@ class ClientConnection:
             self._socket.sendall(response.get_bytes())
             return
 
-        # find root node
         root_authority = RootAuthority(request_parser)
-        root = root_authority.get_root()
-
         try:
+            # find root node
+            root = root_authority.get_root()
             # get result (maybe)
             result = root(request_parser)
             # success !!

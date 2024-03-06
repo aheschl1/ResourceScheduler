@@ -1,0 +1,54 @@
+{
+  "Entity_Name": "uofc",
+  "Type": "Routing",
+  "Children": [
+    {
+      "Entity_Name": "ICT",
+      "Type": "Routing",
+      "Children": [
+        {
+          "Entity_Name": "516",
+          "Type": "Slotted"
+        },
+        {
+          "Entity_Name": "715",
+          "Type": "Slotted"
+        },
+        {
+          "Entity_Name": "Events",
+          "Type": "Routing",
+          "Children": [
+            {
+              "Entity_Name": "Campus_Tour",
+              "Type": "Ticketed"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Entity_Name": "ARC",
+      "Type": "Routing",
+      "Children": [
+        {
+          "Entity_Name": "GPU",
+          "Type": "Routing",
+          "Children": [
+            {
+              "Entity_Name": "v100",
+              "Type": "Slotted"
+            },
+            {
+              "Entity_Name": "a100",
+              "Type": "Slotted"
+            }
+          ]
+        },
+        {
+          "Entity_Name": "CPU",
+          "Type": "Slotted"
+        }
+      ]
+    }
+  ]
+}
