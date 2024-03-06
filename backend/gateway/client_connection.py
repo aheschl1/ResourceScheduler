@@ -59,3 +59,6 @@ class ClientConnection:
             self._socket.sendall(response.get_bytes())
             return
 
+    def __del__(self):
+        self._socket.close()
+
