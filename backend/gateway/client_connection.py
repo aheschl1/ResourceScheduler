@@ -2,7 +2,7 @@ import socket
 from typing import Dict
 
 from backend.gateway.response_formats import Response
-from backend.requests.request_validation import RequestParser
+from backend.requests.requests import Request
 from backend.routing.root_authority import RootAuthority
 from utils.constants import *
 from utils.errors import ValidationError, RejectedRequestError, RoutingError
@@ -23,7 +23,7 @@ class ClientConnection:
         print(f"Received {data.decode()}\nProcessing request")
         if not data:
             return
-        request_parser = RequestParser(data)
+        request_parser = Request(data)
         try:
             # check if request is even valid
             request_parser.validate()

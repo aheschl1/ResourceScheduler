@@ -1,4 +1,4 @@
-from backend.requests.request_validation import RequestParser
+from backend.requests.requests import Request
 from backend.routing.entity.entities import Entity
 import os
 import glob
@@ -13,7 +13,7 @@ if not os.path.exists(TEMPORARY_DATA_ROOT):
 
 
 class RootAuthority:
-    def __init__(self, request: RequestParser):
+    def __init__(self, request: Request):
         self._request = request
         self._root_name = request.extract_next_route()
 

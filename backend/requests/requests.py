@@ -18,10 +18,10 @@ def _validate_request_path(path: str) -> bool:
     return regex.match(path) is not None
 
 
-class RequestParser:
+class Request:
     def __init__(self, request_data: bytes):
         try:
-            self._request_data = RequestParser._decode_request(request_data)
+            self._request_data = Request._decode_request(request_data)
         except Exception as _:
             raise ValidationError("Poorly formatted request. Could not parse the request data.")
         self._consumable_path = self._request_data["request"]

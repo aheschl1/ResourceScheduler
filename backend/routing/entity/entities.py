@@ -1,17 +1,17 @@
 from typing import Union, Dict, List, Tuple
 
-from backend.requests.request_validation import RequestParser, BottomOfRequestError
+from backend.requests.requests import Request, BottomOfRequestError
 from backend.routing.entity.policy import Policy
 from utils.errors import RoutingError, RejectedRequestError
 
 
 class Entity:
     def __init__(self, name: str, policy: Policy, children: List):
-        self._children = {child.name:child for child in children}
+        self._children = {child.name: child for child in children}
         self._policy = policy
         self._name = name
 
-    def __call__(self, request: RequestParser) -> Dict:
+    def __call__(self, request: Request) -> Dict:
         """
         Children should actually do something, and then call super to move on
         :param request:
@@ -35,10 +35,10 @@ class Entity:
 
         return self._children[next_route_name](request)
 
-    def handle_bottom_of_tree(self, request: RequestParser) -> Dict:
+    def handle_bottom_of_tree(self, request: Request) -> Dict:
         raise NotImplementedError("Create entity subclass")
 
-    def validate_request(self, request: RequestParser) -> Union[bool, str]:
+    def validate_request(self, request: Request) -> Union[bool, str]:
         raise NotImplementedError("Create entity subclass")
 
     @property
@@ -50,10 +50,10 @@ class RoutingEntity(Entity):
     def __init__(self, name, policy, children):
         super().__init__(name, policy, children)
 
-    def handle_bottom_of_tree(self, request: RequestParser) -> Dict:
+    def handle_bottom_of_tree(self, request: Request) -> Dict:
         raise RoutingError(f"{self.name} is a routing entity, and should not be a leaf")
 
-    def validate_request(self, request: RequestParser) -> Tuple[bool, str]:
+    def validate_request(self, request: Request) -> Tuple[bool, str]:
         # TODO probably use the policy
         return True, "allowed"
 
@@ -62,17 +62,17 @@ class SlottedEntity(Entity):
     def __init__(self, name, policy, children):
         super().__init__(name, policy, children)
 
-    def _manage_slot_request(self, request: RequestParser) -> Dict:
+    def _manage_slot_request(self, request: Request) -> Dict:
         # TODO do stuff
         return {
-            "result":"ok"
+            "result": "ok"
         }
 
-    def handle_bottom_of_tree(self, request: RequestParser) -> Dict:
+    def handle_bottom_of_tree(self, request: Request) -> Dict:
         result = self._manage_slot_request(request)
         return result
 
-    def validate_request(self, request: RequestParser) -> Tuple[bool, str]:
+    def validate_request(self, request: Request) -> Tuple[bool, str]:
         # TODO probably use the policy
         return True, "allowed"
 
@@ -81,17 +81,17 @@ class TicketedEntity(Entity):
     def __init__(self, name, policy, children):
         super().__init__(name, policy, children)
 
-    def _manage_ticket_request(self, request: RequestParser) -> Dict:
+    def _manage_ticket_request(self, request: Request) -> Dict:
         # TODO do stuff
         return {
             "result": "ok"
         }
 
-    def handle_bottom_of_tree(self, request: RequestParser) -> Dict:
+    def handle_bottom_of_tree(self, request: Request) -> Dict:
         result = self._manage_ticket_request(request)
         return result
 
-    def validate_request(self, request: RequestParser) -> Tuple[bool, str]:
+    def validate_request(self, request: Request) -> Tuple[bool, str]:
         # TODO probably use the policy
         return True, "allowed"
 
