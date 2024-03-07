@@ -8,10 +8,12 @@
       "Children": [
         {
           "Entity_Name": "516",
+          "Policy": "BasicTimeslot",
           "Type": "Slotted"
         },
         {
           "Entity_Name": "715",
+          "Policy": "BasicTimeslot",
           "Type": "Slotted"
         },
         {
@@ -36,16 +38,19 @@
           "Children": [
             {
               "Entity_Name": "v100",
+              "Policy": "BasicTimeslot",
               "Type": "Slotted"
             },
             {
               "Entity_Name": "a100",
+              "Policy": "BasicTimeslot",
               "Type": "Slotted"
             }
           ]
         },
         {
           "Entity_Name": "CPU",
+          "Policy": "BasicTimeslot",
           "Type": "Slotted"
         }
       ]

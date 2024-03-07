@@ -1,4 +1,4 @@
-from typing import Tuple, List, Union, Dict
+from typing import Tuple, List, Union, Dict, Callable
 
 from backend.requests.requests import Request
 from backend.utils.utils import validate_iso8601
@@ -61,6 +61,7 @@ class CascadedPolicy(Policy):
         :param request:
         :return:
         """
+        print(self.cascaded_policies)
         result, reasons = True, []
         for policy in self.cascaded_policies:
             p_result, reason = policy.validate(request)
@@ -80,7 +81,7 @@ class PolicyFactory:
         return CascadedPolicy(arg)
 
     @staticmethod
-    def get_policy_from_argument(arg: Union[str,Dict,List]) -> Policy:
+    def get_policy_from_argument(arg: Union[str, Dict, List]) -> Policy:
         if isinstance(arg, str):
             return PolicyFactory.get_policy_from_name(arg)
         if isinstance(arg, list):
@@ -90,7 +91,7 @@ class PolicyFactory:
     @staticmethod
     def get_policy_from_name(name: str) -> Policy:
         mapping = {
-            "FullApproval": PolicyFactory.create_full_approval_policy,
-            "BasicTimeslot": TimeslotPolicy
+            "FullApproval": PolicyFactory.create_full_approval_policy(),
+            "BasicTimeslot": TimeslotPolicy()
         }
         return mapping[name]

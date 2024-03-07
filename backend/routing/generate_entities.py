@@ -27,7 +27,7 @@ class GenerateEntities:
         parent_policy = data.get("Policy", "FullApproval")
         return get_entity_class_from_type_string(parent_type)(
             parent_entity_name,
-            PolicyFactory.get_policy_from_argument(parent_policy)(),
+            PolicyFactory.get_policy_from_argument(parent_policy),
             parent_children
         )
 
