@@ -35,7 +35,11 @@ class TCPServer:
         print(f"=====A process has connected to {address}=====")
         communicator = ClientConnection(connection, address, buffer_size=TCPServer.buffer_size)
         with connection:
-            communicator.start()
+            try:
+                communicator.start()
+            except Exception as e:
+                connection.sendall(f"Server Error: {e}".encode())
+                print(f"Server Error: {e}")
         print(f"=====Process connected to {address} has ended=====")
 
     def start(self):

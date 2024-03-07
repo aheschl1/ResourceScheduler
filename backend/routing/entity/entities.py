@@ -14,6 +14,13 @@ class Entity:
     def __call__(self, request: Request) -> Dict:
         """
         Children should actually do something, and then call super to move on
+
+        Currently, we take no action unless at the bottom of the tree...
+        It works as follows:
+        -Validate with validate_request at current node
+        -Try to extract next node
+            - Success: recurse on next node
+            - Failure: Bottom of tree, call handle_bottom_of_tree at current node and return result
         :param request:
         :return:
         """
@@ -45,6 +52,10 @@ class Entity:
     def name(self):
         return self._name
 
+    @property
+    def policy(self):
+        return self._policy
+
 
 class RoutingEntity(Entity):
     def __init__(self, name, policy, children):
@@ -54,8 +65,7 @@ class RoutingEntity(Entity):
         raise RoutingError(f"{self.name} is a routing entity, and should not be a leaf")
 
     def validate_request(self, request: Request) -> Tuple[bool, str]:
-        # TODO probably use the policy
-        return True, "allowed"
+        return self.policy.validate(request)
 
 
 class SlottedEntity(Entity):
@@ -73,8 +83,7 @@ class SlottedEntity(Entity):
         return result
 
     def validate_request(self, request: Request) -> Tuple[bool, str]:
-        # TODO probably use the policy
-        return True, "allowed"
+        return self.policy.validate(request)
 
 
 class TicketedEntity(Entity):
@@ -92,8 +101,7 @@ class TicketedEntity(Entity):
         return result
 
     def validate_request(self, request: Request) -> Tuple[bool, str]:
-        # TODO probably use the policy
-        return True, "allowed"
+        return self.policy.validate(request)
 
 
 def get_entity_class_from_type_string(type_string: str) -> Entity:

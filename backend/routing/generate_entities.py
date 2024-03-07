@@ -1,7 +1,8 @@
 import json
-from typing import Dict
+from typing import Dict, Union
 
 from backend.routing.entity.entities import get_entity_class_from_type_string, Entity
+from backend.routing.entity.policy import PolicyFactory
 
 
 class GenerateEntities:
@@ -12,13 +13,23 @@ class GenerateEntities:
         return GenerateEntities.generate_entity_from_dict(data)
 
     @staticmethod
-    def generate_entity_from_dict(data: Dict) -> Entity:
+    def generate_entity_from_dict(data: Dict) -> Union[Entity, dict]:
+        """
+        Create an entity from a dictionary
+        :param data:
+        :return: Entity
+        """
         # TODO deal with policies
         parent_entity_name = data["Entity_Name"]
         parent_type = data["Type"]
         parent_children = data.get("Children", [])
         parent_children = [GenerateEntities.generate_entity_from_dict(child) for child in parent_children]
-        return get_entity_class_from_type_string(parent_type)(parent_entity_name, None, parent_children)
+        parent_policy = data.get("Policy", "FullApproval")
+        return get_entity_class_from_type_string(parent_type)(
+            parent_entity_name,
+            PolicyFactory.get_policy_from_argument(parent_policy)(),
+            parent_children
+        )
 
 
 if __name__ == "__main__":

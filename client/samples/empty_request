@@ -1,6 +1,6 @@
 {
     "authorization": "trust me, I don't hack",
-    "request": "uofc.ARC.GPU.a100.nnnnn",
+    "request": "uofc.ARC.GPU.a100",
     "data":{
         "start_time": "just gimme",
         "end_time": "don't take it away ever"

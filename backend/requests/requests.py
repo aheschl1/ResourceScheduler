@@ -24,7 +24,9 @@ class Request:
             self._request_data = Request._decode_request(request_data)
         except Exception as _:
             raise ValidationError("Poorly formatted request. Could not parse the request data.")
-        self._consumable_path = self._request_data["request"]
+        self._path_fragments = self._request_data["request"].split(".")
+        self._root_name = self._path_fragments[0]
+        self._current_fragment = 0
 
     @staticmethod
     def _decode_request(req: bytes) -> Dict:
@@ -54,16 +56,23 @@ class Request:
         Gives the next route, and removes it from the consumable path
         :return: next route
         """
-        chunks = self._consumable_path.split(".")
-        if len(chunks) == 0 or (len(chunks) == 1 and len(chunks[0]) == 0):
+        if self._current_fragment == len(self._path_fragments):
             raise BottomOfRequestError()
-        next_route = chunks[0]
-        self._consumable_path = '.'.join(chunks[1:])
+        next_route = self._path_fragments[self._current_fragment]
+        self._current_fragment += 1
         return next_route
 
     @property
     def request_path(self):
         return self._request_data["request"]
+
+    @property
+    def root_name(self) -> str:
+        return self._root_name
+
+    @property
+    def data(self) -> dict:
+        return self._request_data["data"]
 
 
 if __name__ == "__main__":
