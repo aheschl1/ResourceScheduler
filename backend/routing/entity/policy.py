@@ -19,6 +19,18 @@ class Policy:
         return True, "success"
 
 
+class TicketedPolicy(Policy):
+
+    def validate(self, request: Request) -> Tuple[bool, str]:
+        if "quantity" not in request.data:
+            return False, "Missing required header: quantity"
+        if "request_parameters" not in request.data:
+            return False, "Missing required header: request_parameters"
+        if not isinstance(request.data["request_parameters"], dict):
+            return False, "Expected request_headers to be a dictionary"
+        return True, "success"
+
+
 class TimeslotPolicy(Policy):
 
     @staticmethod
@@ -92,6 +104,7 @@ class PolicyFactory:
     def get_policy_from_name(name: str) -> Policy:
         mapping = {
             "FullApproval": PolicyFactory.create_full_approval_policy(),
-            "BasicTimeslot": TimeslotPolicy()
+            "BasicTimeslot": TimeslotPolicy(),
+            "TicketedPolicy": TicketedPolicy()
         }
         return mapping[name]

@@ -1,5 +1,6 @@
 from typing import Union, Dict, List, Tuple
 
+from backend.database_endpoints.tickets_data_management import TicketDataManagement
 from backend.requests.requests import Request, BottomOfRequestError
 from backend.routing.entity.policy import Policy
 from utils.errors import RoutingError, RejectedRequestError
@@ -92,6 +93,10 @@ class TicketedEntity(Entity):
 
     def _manage_ticket_request(self, request: Request) -> Dict:
         # TODO do stuff
+        database_manager = TicketDataManagement(request.root_name, request.current_name)
+
+        database_manager.register_tickets(request.data['quantity'], **request.data['request_parameters'])
+
         return {
             "result": "ok"
         }

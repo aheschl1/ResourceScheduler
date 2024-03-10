@@ -1,8 +1,13 @@
 {
     "authorization": "trust me, I don't hack",
-    "request": "uofc.ARC.GPU.a100",
+    "request": "uofc.ICT.Events.Campus_Tour",
     "data":{
+        "quantity": 1,
+        "request_parameters": {
+            "user_id": 23232323,
+            "user_email2": "fadslfkjasf"
+        },
         "start_time": "2024-01-01T01:00:00.000Z",
-        "end_time": "2024-01-01T01:01:00..00"
+        "end_time": "2024-01-01T01:01:00.00"
     }
 }

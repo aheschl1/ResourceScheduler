@@ -5,7 +5,7 @@ from backend.gateway.response_formats import Response
 from backend.requests.requests import Request
 from backend.routing.root_authority import RootAuthority
 from utils.constants import *
-from utils.errors import ValidationError, RejectedRequestError, RoutingError
+from utils.errors import ValidationError, RejectedRequestError, RoutingError, DatabaseWriteError
 
 
 class ClientConnection:
@@ -55,6 +55,15 @@ class ClientConnection:
             response = Response(
                 status_code=ROUTE_DNE,
                 error=str(routing_error)
+            )
+            self._socket.sendall(response.get_bytes())
+            return
+
+        except DatabaseWriteError as database_write_error:
+            # data provided couldn't be written
+            response = Response(
+                status_code=POOR_FORMAT,
+                error=str(database_write_error)
             )
             self._socket.sendall(response.get_bytes())
             return

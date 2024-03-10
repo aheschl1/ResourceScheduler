@@ -19,6 +19,7 @@
         {
           "Entity_Name": "Events",
           "Type": "Routing",
+          "Policy": "TicketedPolicy",
           "Children": [
             {
               "Entity_Name": "Campus_Tour",

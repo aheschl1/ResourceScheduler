@@ -74,6 +74,10 @@ class Request:
     def data(self) -> dict:
         return self._request_data["data"]
 
+    @property
+    def current_name(self):
+        return self._path_fragments[self._current_fragment-1]
+
 
 if __name__ == "__main__":
     print(_validate_request_path("a.0aa_.bbbb"))

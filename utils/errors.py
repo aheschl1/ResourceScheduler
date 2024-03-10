@@ -33,3 +33,19 @@ class RejectedRequestError(Exception):
 
     def __str__(self):
         return f'RejectedRequestError: {self._message}'
+
+
+class NoTicketsAvailableError(Exception):
+    def __init__(self, message: str = ""):
+        self._message = message
+
+    def __str__(self):
+        return f'NoTicketsAvailableError: {self._message}'
+
+
+class DatabaseWriteError(Exception):
+    def __init__(self, message: str = ""):
+        self._message = message
+
+    def __str__(self):
+        return f'DatabaseWriteError: {self._message}'
