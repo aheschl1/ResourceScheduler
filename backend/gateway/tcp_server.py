@@ -30,17 +30,18 @@ class TCPServer:
         :param s: socket to connect with
         :return: None
         """
-        s.listen()
-        connection, address = s.accept()
-        print(f"=====A process has connected to {address}=====")
-        communicator = ClientConnection(connection, address, buffer_size=TCPServer.buffer_size)
-        with connection:
-            try:
-                communicator.start()
-            except Exception as e:
-                connection.sendall(f"Server Error: {e}".encode())
-                print(f"Server Error: {e}")
-        print(f"=====Process connected to {address} has ended=====")
+        with s:
+            s.listen()
+            connection, address = s.accept()
+            print(f"=====A process has connected to {address}=====")
+            communicator = ClientConnection(connection, address, buffer_size=TCPServer.buffer_size)
+            with connection:
+                try:
+                    communicator.start()
+                except Exception as e:
+                    connection.sendall(f"Server Error: {e}".encode())
+                    print(f"Server Error: {e}")
+            print(f"=====Process connected to {address} has ended=====")
 
     def start(self):
         """
@@ -66,10 +67,6 @@ class TCPServer:
             _socket.bind((self._ip, self._port+process))
             sockets.append(_socket)
         return sockets
-
-    def __del__(self):
-        for _socket in self._sockets:
-            _socket.close()
 
 
 if __name__ == "__main__":
