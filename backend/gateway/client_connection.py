@@ -5,7 +5,7 @@ from backend.gateway.response_formats import Response
 from backend.requests.requests import Request
 from backend.routing.root_authority import RootAuthority
 from utils.constants import *
-from utils.errors import ValidationError, RejectedRequestError, RoutingError, DatabaseWriteError
+from utils.errors import ValidationError, RejectedRequestError, RoutingError, DatabaseWriteError, InvalidRequestError
 
 
 class ClientConnection:
@@ -55,6 +55,13 @@ class ClientConnection:
             response = Response(
                 status_code=ROUTE_DNE,
                 error=str(routing_error)
+            )
+            self._socket.sendall(response.get_bytes())
+            return
+        except InvalidRequestError as invalid_request_error:
+            response = Response(
+                status_code=INVALID_REQUEST,
+                error=str(invalid_request_error)
             )
             self._socket.sendall(response.get_bytes())
             return

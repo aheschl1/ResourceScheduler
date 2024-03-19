@@ -1,8 +1,8 @@
+from multiprocessing import Process
+
 from backend.gateway.client_connection import ClientConnection
 from backend.utils.constants import *
 import socket
-from multiprocessing.pool import Pool
-import numpy as np
 from utils.constants import BUFFER_SIZE, DEFAULT_IP, DEFAULT_PORT
 
 
@@ -13,7 +13,8 @@ class TCPServer:
                  ip: str = DEFAULT_IP,
                  port: int = DEFAULT_PORT,
                  protocol: str = TCP,
-                 processes: int = 1
+                 processes: int = 1,
+                 timeout: int = 100
                  ):
 
         assert protocol == TCP, "TCP is only implemented protocol"
@@ -21,38 +22,34 @@ class TCPServer:
         self._processes = processes
         self._ip = ip
         self._port = port
-        self._sockets = self._instantiate_sockets()
+        self._socket = self._instantiate_socket()
+        self._timeout = timeout
+        self._kill = False
 
-    @staticmethod
-    def _start_process(s: socket.socket) -> None:
+    def start(self) -> None:
         """
-        Launched off main process with a socket
-        :param s: socket to connect with
+        Launches client connection off main process with a socket
         :return: None
         """
-        with s:
-            s.listen()
-            connection, address = s.accept()
-            print(f"=====A process has connected to {address}=====")
-            communicator = ClientConnection(connection, address, buffer_size=TCPServer.buffer_size)
-            with connection:
+        with self._socket:
+            self._socket.listen()  # syn request
+            self._socket.settimeout(self._timeout)
+            while not self._kill:
+                connection, address = self._socket.accept()
+                print(f"=====A process has connected to {address}=====")
+                communicator = ClientConnection(connection, address, buffer_size=TCPServer.buffer_size)
                 try:
-                    communicator.start()
+                    communicator_process = Process(
+                        target=communicator.start
+                    )
+                    communicator_process.start()
                 except Exception as e:
                     connection.sendall(f"Server Error: {e}".encode())
                     print(f"Server Error: {e}")
-            print(f"=====Process connected to {address} has ended=====")
+                print(f"=====Process connected to {address} has ended=====")
+        print("Server terminated")
 
-    def start(self):
-        """
-        Wait for a connection, and then pass it off the ClientCommunications
-        :return:
-        """
-        with Pool(self._processes) as pool:
-            print(f"Starting {self._processes} server processes")
-            pool.map(TCPServer._start_process, self._sockets)
-
-    def _instantiate_sockets(self):
+    def _instantiate_socket(self):
         """
         Creates a socket for each process
         :return: socket
@@ -61,14 +58,14 @@ class TCPServer:
             socket_type = socket.SOCK_STREAM
         else:
             raise NotImplementedError("Unsupported protocol")
-        sockets = []
-        for process in range(self._processes):
-            _socket = socket.socket(socket.AF_INET, socket_type)
-            _socket.bind((self._ip, self._port+process))
-            sockets.append(_socket)
-        return sockets
+        _socket = socket.socket(socket.AF_INET, socket_type)
+        _socket.bind((self._ip, self._port))
+        return _socket
+
+    def kill(self):
+        self._kill = True
 
 
 if __name__ == "__main__":
-    server = TCPServer(processes=1)
+    server = TCPServer(processes=5)
     server.start()

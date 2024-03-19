@@ -1,7 +1,7 @@
 import pandas as pd
 import os
 
-from utils.errors import NoTicketsAvailableError, DatabaseWriteError
+from utils.errors import NoTicketsAvailableError, DatabaseWriteError, InvalidRequestError
 
 TEMPORARY_DATA_ROOT = "/home/andrewheschl/PycharmProjects/ResourceScheduler/backend/temp_sus_database"
 if not os.path.exists(TEMPORARY_DATA_ROOT):
@@ -23,10 +23,18 @@ class TicketDataManagement:
         self.tickets_data = pd.read_csv(self.resource_data_path)
 
     def register_tickets(self, quantity, **kwargs):
+        """
+        Registers 'quantity' tickets
+        :param quantity: number of tickets
+        :param kwargs: headers in the database
+        :return:
+        """
         tickets_available = self.tickets_data.available[0]
         tickets_available -= len(self.tickets_allocated)
         if tickets_available < quantity:
             raise NoTicketsAvailableError(f"Requested {quantity} tickets but only {tickets_available} are available.")
+        if quantity <= 0:
+            raise InvalidRequestError(f"You must request >= 0 tickets.")
         # what data we expect
         expected_headers = self.tickets_allocated.columns.tolist()
         # what data we have

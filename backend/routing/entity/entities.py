@@ -1,3 +1,4 @@
+from abc import abstractmethod
 from typing import Union, Dict, List, Tuple
 
 from backend.database_endpoints.tickets_data_management import TicketDataManagement
@@ -43,9 +44,11 @@ class Entity:
 
         return self._children[next_route_name](request)
 
+    @abstractmethod
     def handle_bottom_of_tree(self, request: Request) -> Dict:
         raise NotImplementedError("Create entity subclass")
 
+    @abstractmethod
     def validate_request(self, request: Request) -> Union[bool, str]:
         raise NotImplementedError("Create entity subclass")
 
@@ -92,9 +95,7 @@ class TicketedEntity(Entity):
         super().__init__(name, policy, children)
 
     def _manage_ticket_request(self, request: Request) -> Dict:
-        # TODO do stuff
         database_manager = TicketDataManagement(request.root_name, request.current_name)
-
         database_manager.register_tickets(request.data['quantity'], **request.data['request_parameters'])
 
         return {

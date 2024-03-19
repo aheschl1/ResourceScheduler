@@ -49,3 +49,11 @@ class DatabaseWriteError(Exception):
 
     def __str__(self):
         return f'DatabaseWriteError: {self._message}'
+
+
+class InvalidRequestError(Exception):
+    def __init__(self, message: str = ""):
+        self._message = message
+
+    def __str__(self):
+        return f'InvalidDataRequest: {self._message}'
