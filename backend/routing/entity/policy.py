@@ -1,3 +1,4 @@
+from abc import abstractmethod, ABC
 from typing import Tuple, List, Union, Dict, Callable
 
 from backend.requests.requests import Request
@@ -8,6 +9,7 @@ class Policy:
     def __init__(self, full_approval: bool = False):
         self.full_approval = full_approval
 
+    @abstractmethod
     def validate(self, request: Request) -> Tuple[bool, str]:
         """
         Validate a request against a policy
@@ -63,9 +65,15 @@ class TimeslotPolicy(Policy):
 
 
 class CascadedPolicy(Policy):
-    def __init__(self, cascaded_policies: List[Union[str, List, Dict]]):
+    def __init__(self, cascaded_policies: List[Union[str, Policy, List, Dict]]):
         super().__init__(False)
-        self.cascaded_policies = [PolicyFactory.get_policy_from_argument(x) for x in cascaded_policies]
+        policies = []
+        for p in cascaded_policies:
+            if isinstance(p, Policy):
+                policies.append(p)
+            else:
+                policies.append(PolicyFactory.get_policy_from_argument(p))
+        self.cascaded_policies = policies
 
     def validate(self, request: Request) -> Tuple[bool, str]:
         """
@@ -83,6 +91,42 @@ class CascadedPolicy(Policy):
         return result, str(reasons)
 
 
+class RequiredHeaderPolicy(Policy):
+    def __init__(self, arg: Dict):
+        super().__init__(False)
+        if "headers" not in arg:
+            raise NotImplementedError("Policy is invalid")
+        self.required_headers = arg["headers"]
+        self.strict = arg.get("strict", False)
+
+    def validate(self, request: Request) -> Tuple[bool, str]:
+        """
+        Validates headers exist, and only those specified if strict
+        :param request:
+        :return:
+        """
+        for header in self.required_headers:
+            if '.' not in header:
+                if header not in request.headers:
+                    return False, f"Missing header {header}"
+            else:
+                # asked for say data.quantity to exist
+                hierarchy = header.split('.')
+                level = request.raw_request
+                for internal_header in hierarchy:
+                    try:
+                        level = level[internal_header]
+                    except KeyError:
+                        return False, f"Missing header {header}"
+
+        if self.strict:
+            for header in request.headers:
+                if header not in self.required_headers:
+                    return False, f"Header '{header}' not allowed"
+
+        return True, "success"
+
+
 class PolicyFactory:
     @staticmethod
     def create_full_approval_policy() -> Policy:
@@ -93,12 +137,24 @@ class PolicyFactory:
         return CascadedPolicy(arg)
 
     @staticmethod
+    def get_policy_from_dict(arg: Dict) -> Policy:
+        policy_lookup = {
+            "required_headers": RequiredHeaderPolicy,
+        }
+        policies = []
+        for key, value in arg.items():
+            policies.append(policy_lookup[key](value))
+        return CascadedPolicy(policies)
+
+    @staticmethod
     def get_policy_from_argument(arg: Union[str, Dict, List]) -> Policy:
         if isinstance(arg, str):
             return PolicyFactory.get_policy_from_name(arg)
         if isinstance(arg, list):
             return PolicyFactory.get_cascade_policy_from_list(arg)
-        raise NotImplementedError("Only string policy names and lists of names are implemented right now")
+        if isinstance(arg, dict):
+            return PolicyFactory.get_policy_from_dict(arg)
+        raise NotImplementedError("Policy is invalid")
 
     @staticmethod
     def get_policy_from_name(name: str) -> Policy:
@@ -107,4 +163,7 @@ class PolicyFactory:
             "BasicTimeslot": TimeslotPolicy(),
             "TicketedPolicy": TicketedPolicy()
         }
+        if name not in mapping:
+            raise NotImplementedError("Policy is invalid")
+
         return mapping[name]

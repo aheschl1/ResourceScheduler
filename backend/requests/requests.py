@@ -41,12 +41,8 @@ class Request:
     def validate(self) -> True:
         if not self._request_data:
             raise ValidationError("Request data is None")
-        if "authorization" not in self._request_data:
-            raise ValidationError("Request does not have an authorization key")
         if "request" not in self._request_data:
             raise ValidationError("Request path not specified in request")
-        if "data" not in self._request_data:
-            raise ValidationError("Request missing data arguments")
         if not _validate_request_path(self.request_path):
             raise ValidationError("Requested path is not legal")
         return True
@@ -75,8 +71,16 @@ class Request:
         return self._request_data["data"]
 
     @property
+    def raw_request(self) -> dict:
+        return self._request_data
+
+    @property
     def current_name(self):
         return self._path_fragments[self._current_fragment-1]
+
+    @property
+    def headers(self):
+        return list(self._request_data.keys())
 
 
 if __name__ == "__main__":

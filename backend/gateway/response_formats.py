@@ -8,7 +8,7 @@ class Response:
     Manages responses, and ensures that they are formatted uniformly
     """
     def __init__(self, status_code, **kwargs):
-        if status_code not in [SUCCESS, POOR_FORMAT, REJECTED_BY_ENTITY, ROUTE_DNE, INVALID_REQUEST]:
+        if status_code not in [SUCCESS, POOR_FORMAT, REJECTED_BY_ENTITY, ROUTE_DNE, INVALID_REQUEST, UNKNOWN]:
             raise InternalResponseError("Status code used is invalid in response")
 
         self.status_code = status_code

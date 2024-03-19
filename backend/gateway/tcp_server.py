@@ -13,13 +13,11 @@ class TCPServer:
                  ip: str = DEFAULT_IP,
                  port: int = DEFAULT_PORT,
                  protocol: str = TCP,
-                 processes: int = 1,
                  timeout: int = 100
                  ):
 
         assert protocol == TCP, "TCP is only implemented protocol"
         self._protocol = protocol
-        self._processes = processes
         self._ip = ip
         self._port = port
         self._socket = self._instantiate_socket()
@@ -67,5 +65,5 @@ class TCPServer:
 
 
 if __name__ == "__main__":
-    server = TCPServer(processes=5)
+    server = TCPServer()
     server.start()

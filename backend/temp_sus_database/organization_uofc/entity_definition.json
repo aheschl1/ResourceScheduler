@@ -8,7 +8,6 @@
       "Children": [
         {
           "Entity_Name": "516",
-          "Policy": "BasicTimeslot",
           "Type": "Slotted"
         },
         {
@@ -19,7 +18,20 @@
         {
           "Entity_Name": "Events",
           "Type": "Routing",
-          "Policy": "TicketedPolicy",
+          "Policy": {
+            "required_headers": {
+              "strict": true,
+              "headers":[
+                "authorization",
+                "request",
+                "data.quantity",
+                "data.request_parameters",
+                "data.request_parameters",
+                "data.request_parameters.user_id",
+                "data.request_parameters.user_email"
+              ]
+            }
+          },
           "Children": [
             {
               "Entity_Name": "Campus_Tour",

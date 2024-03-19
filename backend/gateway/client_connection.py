@@ -65,12 +65,18 @@ class ClientConnection:
             )
             self._socket.sendall(response.get_bytes())
             return
-
         except DatabaseWriteError as database_write_error:
             # data provided couldn't be written
             response = Response(
                 status_code=POOR_FORMAT,
                 error=str(database_write_error)
+            )
+            self._socket.sendall(response.get_bytes())
+            return
+        except Exception as exception:
+            response = Response(
+                status_code=UNKNOWN,
+                error=str(exception)
             )
             self._socket.sendall(response.get_bytes())
             return
