@@ -57,3 +57,19 @@ class InvalidRequestError(Exception):
 
     def __str__(self):
         return f'InvalidDataRequest: {self._message}'
+
+
+class InvalidTimeslotError(Exception):
+    def __init__(self, message: str = ""):
+        self._message = message
+
+    def __str__(self):
+        return f'InvalidTimeslotError: {self._message}'
+
+
+class OverlappingTimeslotError(Exception):
+    def __init__(self, message: str = ""):
+        self._message = message
+
+    def __str__(self):
+        return f'OverlappingTimeslotRequest: {self._message}'

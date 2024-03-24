@@ -1,7 +1,7 @@
 from abc import abstractmethod
 from typing import Union, Dict, List, Tuple
 
-from backend.database_endpoints.tickets_data_management import TicketDataManagement
+from backend.database_endpoints.data_management import TicketDataManagement, TimeslotDataManagement
 from backend.requests.requests import Request, BottomOfRequestError
 from backend.routing.entity.policy import Policy
 from utils.errors import RoutingError, RejectedRequestError
@@ -76,8 +76,11 @@ class SlottedEntity(Entity):
     def __init__(self, name, policy, children):
         super().__init__(name, policy, children)
 
-    def _manage_slot_request(self, request: Request) -> Dict:
-        # TODO do stuff
+    @staticmethod
+    def _manage_slot_request(request: Request) -> Dict:
+        database_manager = TimeslotDataManagement(request.root_name, request.current_name)
+        database_manager.register(**request.data['request_parameters'])
+
         return {
             "result": "ok"
         }
@@ -94,16 +97,17 @@ class TicketedEntity(Entity):
     def __init__(self, name, policy, children):
         super().__init__(name, policy, children)
 
-    def _manage_ticket_request(self, request: Request) -> Dict:
+    @staticmethod
+    def _manage_ticket_request(request: Request) -> Dict:
         database_manager = TicketDataManagement(request.root_name, request.current_name)
-        database_manager.register_tickets(request.data['quantity'], **request.data['request_parameters'])
+        database_manager.register(request.data['quantity'], **request.data['request_parameters'])
 
         return {
             "result": "ok"
         }
 
     def handle_bottom_of_tree(self, request: Request) -> Dict:
-        result = self._manage_ticket_request(request)
+        result = TicketedEntity._manage_ticket_request(request)
         return result
 
     def validate_request(self, request: Request) -> Tuple[bool, str]:
