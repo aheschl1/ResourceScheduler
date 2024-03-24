@@ -1,3 +1,5 @@
+import sys
+sys.path.append("/home/andrewheschl/PycharmProjects/ResourceScheduler")
 from multiprocessing import Process
 
 from backend.gateway.client_connection import ClientConnection
@@ -13,7 +15,7 @@ class TCPServer:
                  ip: str = DEFAULT_IP,
                  port: int = DEFAULT_PORT,
                  protocol: str = TCP,
-                 timeout: int = 100
+                 timeout: int = 2
                  ):
 
         assert protocol == TCP, "TCP is only implemented protocol"
@@ -33,7 +35,10 @@ class TCPServer:
             self._socket.listen()  # syn request
             self._socket.settimeout(self._timeout)
             while not self._kill:
-                connection, address = self._socket.accept()
+                try:
+                    connection, address = self._socket.accept()
+                except TimeoutError: continue
+
                 print(f"=====A process has connected to {address}=====")
                 communicator = ClientConnection(connection, address, buffer_size=TCPServer.buffer_size)
                 try:
