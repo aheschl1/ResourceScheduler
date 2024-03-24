@@ -139,7 +139,7 @@ class PolicyFactory:
     @staticmethod
     def get_policy_from_dict(arg: Dict) -> Policy:
         policy_lookup = {
-            "required_headers": RequiredHeaderPolicy,
+            "required_headers": RequiredHeaderPolicy
         }
         policies = []
         for key, value in arg.items():

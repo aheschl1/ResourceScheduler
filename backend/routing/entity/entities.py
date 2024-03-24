@@ -117,3 +117,4 @@ def get_entity_class_from_type_string(type_string: str) -> Entity:
         "Ticketed": TicketedEntity
     }
     return mapping[type_string]
+

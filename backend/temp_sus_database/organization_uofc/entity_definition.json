@@ -1,6 +1,12 @@
 {
   "Entity_Name": "uofc",
   "Type": "Routing",
+  "Policy": {
+    "required_headers": [
+      "user_attributes.ucid",
+      "user_attributes.undergrad"
+    ]
+  },
   "Children": [
     {
       "Entity_Name": "ICT",
@@ -20,7 +26,7 @@
           "Type": "Routing",
           "Policy": {
             "required_headers": {
-              "strict": true,
+              "strict": false,
               "headers":[
                 "authorization",
                 "request",
@@ -35,7 +41,8 @@
           "Children": [
             {
               "Entity_Name": "Campus_Tour",
-              "Type": "Ticketed"
+              "Type": "Ticketed",
+              "Policy": "TicketedPolicy"
             }
           ]
         }

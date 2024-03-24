@@ -1,11 +1,14 @@
 {
-    "authorization": "trust me, I don't hack",
+    "user_attributes":{
+        "token": "8795832795843759837598",
+        "name": "...."
+    },
     "request": "uofc.ICT.Events.Campus_Tour",
     "data":{
-        "quantity": 7,
+        "quantity": 6,
         "request_parameters": {
-            "user_id": 18,
-            "user_email": "sfdfsd"
+            "user_id": 1822,
+            "user_email": "fdsaljkahslkjfahlskfjdhlaskf"
         },
         "start_time": "2024-01-01T01:00:00.000Z",
         "end_time": "2024-01-01T01:01:00.00"
