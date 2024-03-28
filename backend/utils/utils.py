@@ -1,4 +1,5 @@
 import re
+from typing import Dict, Any
 
 
 def validate_iso8601(time: str):
@@ -10,3 +11,26 @@ def validate_iso8601(time: str):
     except:
         pass
     return False
+
+
+def hierarchical_dict_lookup(dictionary: Dict[str, Any], key: str):
+    """
+    Looks up multi level keys.
+    for example:
+    {
+        hi: {
+            womp: womp2
+        }
+    }
+    hi.womp = womp2
+    :param dictionary:
+    :param key:
+    :return:
+    """
+    hierarchy = key.split('.')
+    for internal_header in hierarchy:
+        try:
+            dictionary = dictionary[internal_header]
+        except KeyError:
+            raise KeyError(f"{key} not found in dictionary")
+    return dictionary
