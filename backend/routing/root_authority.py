@@ -1,5 +1,5 @@
 from backend.requests.requests import Request
-from backend.routing.entity.entities import Entity
+from backend.entity import Entity
 import os
 import glob
 

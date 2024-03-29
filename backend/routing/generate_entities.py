@@ -1,8 +1,8 @@
 import json
 from typing import Dict, Union
 
-from backend.routing.entity.entities import get_entity_class_from_type_string, Entity
-from backend.routing.entity.policy import PolicyFactory
+from backend.entity.entities import get_entity_class_from_type_string, Entity
+from backend.policies.policy import PolicyFactory
 
 
 class GenerateEntities:
