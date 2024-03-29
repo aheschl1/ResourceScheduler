@@ -175,12 +175,12 @@ class ArgumentFormatPolicy(Policy):
 
     def validate(self, request: Request) -> Tuple[bool, str]:
         result, reasons = True, []
-        for key, format in self.requirements.items():
+        for key, format_check in self.requirements.items():
             value = hierarchical_dict_lookup(request.raw_request, key)
             try:
-                validator = self._formats[format]
+                validator = self._formats[format_check]
             except KeyError:
-                return False, f"Unknown/Unimplemented format '{format}'"
+                return False, f"Unknown/Unimplemented format '{format_check}'"
             in_format = validator(value)
             reasons.append({f"{key}": in_format})
             if not in_format:
@@ -271,6 +271,74 @@ class LesserThanEQPolicy(Policy):
         return result, json.dumps(reasons, indent=4)
 
 
+class GreaterThanPolicyK(Policy):
+    def __init__(self, arguments: Dict[str, Any]):
+        super().__init__(False)
+        self.arguments = arguments
+
+    def validate(self, request: Request) -> Tuple[bool, str]:
+        result, reasons = True, []
+        for key1, key2 in self.arguments.items():
+            value1 = hierarchical_dict_lookup(request.raw_request, key1)
+            value2 = hierarchical_dict_lookup(request.raw_request, key2)
+            gt = value1 > value2
+            reasons.append({key1: gt})
+            if not gt:
+                result = False
+        return result, json.dumps(reasons, indent=4)
+
+
+class LesserThanPolicyK(Policy):
+    def __init__(self, arguments: Dict[str, Any]):
+        super().__init__(False)
+        self.arguments = arguments
+
+    def validate(self, request: Request) -> Tuple[bool, str]:
+        result, reasons = True, []
+        for key1, key2 in self.arguments.items():
+            value1 = hierarchical_dict_lookup(request.raw_request, key1)
+            value2 = hierarchical_dict_lookup(request.raw_request, key2)
+            lt = value1 < value2
+            reasons.append({key1: lt})
+            if not lt:
+                result = False
+        return result, json.dumps(reasons, indent=4)
+
+
+class GreaterThanEQPolicyK(Policy):
+    def __init__(self, arguments: Dict[str, str]):
+        super().__init__(False)
+        self.arguments = arguments
+
+    def validate(self, request: Request) -> Tuple[bool, str]:
+        result, reasons = True, []
+        for key1, key2 in self.arguments.items():
+            value1 = hierarchical_dict_lookup(request.raw_request, key1)
+            value2 = hierarchical_dict_lookup(request.raw_request, key2)
+            ge = value1 >= value2
+            reasons.append({key1: ge})
+            if not ge:
+                result = False
+        return result, json.dumps(reasons, indent=4)
+
+
+class LesserThanEQPolicyK(Policy):
+    def __init__(self, arguments: Dict[str, str]):
+        super().__init__(False)
+        self.arguments = arguments
+
+    def validate(self, request: Request) -> Tuple[bool, str]:
+        result, reasons = True, []
+        for key1, key2 in self.arguments.items():
+            value1 = hierarchical_dict_lookup(request.raw_request, key1)
+            value2 = hierarchical_dict_lookup(request.raw_request, key2)
+            le = value1 <= value2
+            reasons.append({key1: le})
+            if not le:
+                result = False
+        return result, json.dumps(reasons, indent=4)
+
+
 class MatchPolicy(Policy):
     def __init__(self, arguments: Dict[str, List[Any]]):
         super().__init__(False)
@@ -297,12 +365,16 @@ P = {b1, b2, b3, b4, .... bn}
 Where bi is some behavior that defines a type of validation.
 
 A behavior may be one of these:
-TODO 1. Match(key, [v1, v2, v3, ...., vn]) where vi is an allowable value for a key
-2. Lesser_Than(key1, key2) is key1 < key2 DONE
-3. Greater_Than(key1, key2) is key1 > key2 DONE
-4. Lesser_ThanEQ(key1, key2) is key1 <= key2
-5. Greater_ThanEQ(key1, key2) is key1 >= key2 
-6. Equal(key1, key2) is key1 == key2 DONE
+1. Match(key, [v1, v2, v3, ...., vn]) where vi is an allowable value for a key DONE
+2. Lesser_Than(key1, val) is key1 < val DONE
+3. Greater_Than(key1, val) is key1 > val DONE
+4. Lesser_ThanEQ(key1, val) is key1 <= val DONE
+5. Greater_ThanEQ(key1, val) is key1 >= val DONE
+2. Lesser_ThanK(key1, key2) is key1 < key2 
+3. Greater_ThanK(key1, key2) is key1 > key2 
+4. Lesser_ThanEQK(key1, key2) is key1 <= key2 
+5. Greater_ThanEQK(key1, key2) is key1 >= key2 
+6. Equal(key1, key2, ... keyn) is key1 == key2 == ... == keyn DONE
 7. Format(ke1, f) where f is a format type element of Formats DONE
 8. and(b1, b2, ....) where all behaviors bi apply DONE
 9. Or(b1, b2, ....) where at least one behavior bi applies DONE
@@ -391,7 +463,7 @@ if __name__ == "__main__":
             }}
         ]
     }
-    policy = PolicyFactory.get_policy_from_argument(policy_test)
+    policy2 = PolicyFactory.get_policy_from_argument(policy_test)
     request_sample = {
         "header": "hi",
         "request": "uofc.hi",
@@ -402,7 +474,7 @@ if __name__ == "__main__":
         "hello": "wor2ld"
     }
     encoded_data = json.dumps(request_sample, indent=4).encode('utf-8')
-    request = Request(encoded_data)
-    result, reason = policy(request)
-    print(reason)
-    print(result)
+    request2 = Request(encoded_data)
+    result2, reason2 = policy2(request2)
+    print(reason2)
+    print(result2)
