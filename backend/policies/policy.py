@@ -1,359 +1,11 @@
 from abc import abstractmethod
-from typing import Tuple, List, Union, Dict, Any
+from typing import Tuple, List, Union, Dict
 
+from backend.policies.difference_policies.policies import GreaterThanPolicy, LesserThanPolicy, GreaterThanEQPolicy, LesserThanEQPolicy
+from backend.policies.equality_policies.policies import EqualityPolicy, MatchPolicy
+from backend.policies.highlevel_policies.policies import TicketedPolicy, TimeslotPolicy
+from backend.policies.request_control_policies.policies import RequiredHeaderPolicy, ArgumentFormatPolicy
 from backend.requests.requests import Request
-from backend.utils.utils import validate_iso8601, hierarchical_dict_lookup
-
-
-class Policy:
-    def __init__(self, full_approval: bool = False):
-        self.full_approval = full_approval
-
-    @abstractmethod
-    def validate(self, request: Request) -> Tuple[bool, str]:
-        """
-        Validate a request against a policy
-        :param request: The request to validate
-        :return: Approved or not, and reason if failure
-        """
-        if not self.full_approval:
-            return False, "Base class policy without full approval auto rejects."
-        return True, "success"
-
-    def __str__(self):
-        return str(self.__class__.__name__)
-
-    def __call__(self, request: Request) -> Tuple[bool, str]:
-        return self.validate(request)
-
-
-class TicketedPolicy(Policy):
-    """
-    High Level Policy
-    """
-
-    def validate(self, request: Request) -> Tuple[bool, str]:
-        if "quantity" not in request.data:
-            return False, "Missing required header: quantity"
-        if "request_parameters" not in request.data:
-            return False, "Missing required header: request_parameters"
-        if not isinstance(request.data["request_parameters"], dict):
-            return False, "Expected request_headers to be a dictionary"
-        return True, "success"
-
-
-class TimeslotPolicy(Policy):
-    """
-    High Level Policy
-    """
-
-    @staticmethod
-    def _validate_data_headers(request: Request) -> Tuple[bool, List[str]]:
-        missing_headers = []
-        if "start_time" not in request.data:
-            missing_headers.append("start_time")
-        if "end_time" not in request.data:
-            missing_headers.append("end_time")
-        return len(missing_headers) == 0, missing_headers
-
-    def validate(self, request: Request) -> Tuple[bool, str]:
-        """
-        Checks that data has start_time and end_time.
-        Checks that time stamps are valid (iso8601 format)
-        Checks that start time < end time
-        :param request:
-        :return:
-        """
-        header_approval, missing_headers = TimeslotPolicy._validate_data_headers(request)
-        if not header_approval:
-            return False, f"Missing required headers: {missing_headers}."
-        valid_timestamp = validate_iso8601(request.data["start_time"])
-        valid_timestamp = valid_timestamp and validate_iso8601(request.data["end_time"])
-        if not valid_timestamp:
-            return False, f"Timestamps must be in ISO 8601 format, but were not."
-        if request.data["end_time"] <= request.data["start_time"]:
-            return False, f"End time must be greater than start time."
-        return True, "success"
-
-
-# TODO cascaded policy verbose is a bit of a mess
-class CascadedPolicy(Policy):
-    def __init__(self, cascaded_policies: Union[Dict, List[Union[str, Policy, List, Dict]]]):
-        super().__init__(False)
-        policies = []
-        if not isinstance(cascaded_policies, dict):
-            for p in cascaded_policies:
-                if isinstance(p, Policy):
-                    policies.append(p)
-                else:
-                    policies.append(PolicyFactory.get_policy_from_argument(p))
-        else:
-            policies = PolicyFactory.get_policy_from_dict(cascaded_policies, return_policy_list=True)
-        self.cascaded_policies = policies
-
-    def validate(self, request: Request) -> Tuple[bool]:
-        raise NotImplementedError("Server error. CascadePolicy is to be treated as abstract.")
-
-
-class AndPolicy(CascadedPolicy):
-    def validate(self, request: Request) -> Tuple[bool, str]:
-        """
-        Validated request against a list of cascaded policies
-        :param request:
-        :return:
-        """
-        result, reasons = True, []
-        for policy in self.cascaded_policies:
-            p_result, reason = policy.validate(request)
-            reason = json.decoder.JSONDecoder().decode(reason)
-            reasons.append({f"{str(policy)}": reason})
-            if not p_result:
-                result = False
-        return result, json.dumps(reasons, indent=4)
-
-
-class OrPolicy(CascadedPolicy):
-    def validate(self, request: Request) -> Tuple[bool, str]:
-        """
-        Validated request against a list of policies.
-        Only one policy must accept
-        :param request:
-        :return:
-        """
-        result, reasons = False, []
-        for policy in self.cascaded_policies:
-            p_result, reason = policy.validate(request)
-            reason = json.decoder.JSONDecoder().decode(reason)
-            reasons.append({f"{str(policy)}": reason})
-            if p_result:
-                result = True
-                break
-
-        return result, json.dumps(reasons, indent=4)
-
-
-class RequiredHeaderPolicy(Policy):
-    def __init__(self, arg: Dict):
-        super().__init__(False)
-        if "headers" not in arg:
-            raise NotImplementedError("Policy is invalid")
-        self.required_headers = arg["headers"]
-        self.strict = arg.get("strict", False)
-
-    def validate(self, request: Request) -> Tuple[bool, str]:
-        """
-        Validates headers exist, and only those specified if strict
-        :param request:
-        :return:
-        """
-        for header in self.required_headers:
-            if '.' not in header:
-                if header not in request.headers:
-                    return False, f"Missing header {header}"
-            else:
-                # asked for say data.quantity to exist
-                try:
-                    hierarchical_dict_lookup(request.raw_request, header)
-                except KeyError:
-                    return False, f"Missing header {header}"
-
-        if self.strict:
-            for header in request.headers:
-                if header not in self.required_headers:
-                    return False, f"Header '{header}' not allowed"
-
-        return True, "success"
-
-
-class ArgumentFormatPolicy(Policy):
-    def __init__(self, requirements: Dict[str, str]):
-        super().__init__(False)
-        self.requirements = requirements
-        self._formats = {
-            "iso8601": validate_iso8601
-        }
-
-    def validate(self, request: Request) -> Tuple[bool, str]:
-        result, reasons = True, []
-        for key, format_check in self.requirements.items():
-            value = hierarchical_dict_lookup(request.raw_request, key)
-            try:
-                validator = self._formats[format_check]
-            except KeyError:
-                return False, f"Unknown/Unimplemented format '{format_check}'"
-            in_format = validator(value)
-            reasons.append({f"{key}": in_format})
-            if not in_format:
-                result = False
-
-        return result, json.dumps(reasons, indent=4)
-
-
-class EqualityPolicy(Policy):
-    def __init__(self, required_equality_keys: List[str]):
-        super().__init__(False)
-        self.required_equality_keys = required_equality_keys
-
-    def validate(self, request: Request) -> Tuple[bool, str]:
-        result, reason = True, "success"
-        last_value = None
-        for key in self.required_equality_keys:
-            value = hierarchical_dict_lookup(request.raw_request, key)
-            result = last_value is None or value == last_value
-            last_value = value
-            if not result:
-                reason = f"Value '{key}' broke the equality chain"
-                break
-        return result, json.dumps(reason, indent=4)
-
-
-class GreaterThanPolicy(Policy):
-    def __init__(self, arguments: Dict[str, Any]):
-        super().__init__(False)
-        self.arguments = arguments
-
-    def validate(self, request: Request) -> Tuple[bool, str]:
-        result, reasons = True, []
-        for key, compare in self.arguments.items():
-            value = hierarchical_dict_lookup(request.raw_request, key)
-            gt = value > compare
-            reasons.append({key: gt})
-            if not gt:
-                result = False
-        return result, json.dumps(reasons, indent=4)
-
-
-class LesserThanPolicy(Policy):
-    def __init__(self, arguments: Dict[str, Any]):
-        super().__init__(False)
-        self.arguments = arguments
-
-    def validate(self, request: Request) -> Tuple[bool, str]:
-        result, reasons = True, []
-        for key, compare in self.arguments.items():
-            value = hierarchical_dict_lookup(request.raw_request, key)
-            lt = value < compare
-            reasons.append({key: lt})
-            if not lt:
-                result = False
-        return result, json.dumps(reasons, indent=4)
-
-
-class GreaterThanEQPolicy(Policy):
-    def __init__(self, arguments: Dict[str, Any]):
-        super().__init__(False)
-        self.arguments = arguments
-
-    def validate(self, request: Request) -> Tuple[bool, str]:
-        result, reasons = True, []
-        for key, compare in self.arguments.items():
-            value = hierarchical_dict_lookup(request.raw_request, key)
-            ge = value >= compare
-            reasons.append({key: ge})
-            if not ge:
-                result = False
-        return result, json.dumps(reasons, indent=4)
-
-
-class LesserThanEQPolicy(Policy):
-    def __init__(self, arguments: Dict[str, Any]):
-        super().__init__(False)
-        self.arguments = arguments
-
-    def validate(self, request: Request) -> Tuple[bool, str]:
-        result, reasons = True, []
-        for key, compare in self.arguments.items():
-            value = hierarchical_dict_lookup(request.raw_request, key)
-            le = value <= compare
-            reasons.append({key: le})
-            if not le:
-                result = False
-        return result, json.dumps(reasons, indent=4)
-
-
-class GreaterThanPolicyK(Policy):
-    def __init__(self, arguments: Dict[str, Any]):
-        super().__init__(False)
-        self.arguments = arguments
-
-    def validate(self, request: Request) -> Tuple[bool, str]:
-        result, reasons = True, []
-        for key1, key2 in self.arguments.items():
-            value1 = hierarchical_dict_lookup(request.raw_request, key1)
-            value2 = hierarchical_dict_lookup(request.raw_request, key2)
-            gt = value1 > value2
-            reasons.append({key1: gt})
-            if not gt:
-                result = False
-        return result, json.dumps(reasons, indent=4)
-
-
-class LesserThanPolicyK(Policy):
-    def __init__(self, arguments: Dict[str, Any]):
-        super().__init__(False)
-        self.arguments = arguments
-
-    def validate(self, request: Request) -> Tuple[bool, str]:
-        result, reasons = True, []
-        for key1, key2 in self.arguments.items():
-            value1 = hierarchical_dict_lookup(request.raw_request, key1)
-            value2 = hierarchical_dict_lookup(request.raw_request, key2)
-            lt = value1 < value2
-            reasons.append({key1: lt})
-            if not lt:
-                result = False
-        return result, json.dumps(reasons, indent=4)
-
-
-class GreaterThanEQPolicyK(Policy):
-    def __init__(self, arguments: Dict[str, str]):
-        super().__init__(False)
-        self.arguments = arguments
-
-    def validate(self, request: Request) -> Tuple[bool, str]:
-        result, reasons = True, []
-        for key1, key2 in self.arguments.items():
-            value1 = hierarchical_dict_lookup(request.raw_request, key1)
-            value2 = hierarchical_dict_lookup(request.raw_request, key2)
-            ge = value1 >= value2
-            reasons.append({key1: ge})
-            if not ge:
-                result = False
-        return result, json.dumps(reasons, indent=4)
-
-
-class LesserThanEQPolicyK(Policy):
-    def __init__(self, arguments: Dict[str, str]):
-        super().__init__(False)
-        self.arguments = arguments
-
-    def validate(self, request: Request) -> Tuple[bool, str]:
-        result, reasons = True, []
-        for key1, key2 in self.arguments.items():
-            value1 = hierarchical_dict_lookup(request.raw_request, key1)
-            value2 = hierarchical_dict_lookup(request.raw_request, key2)
-            le = value1 <= value2
-            reasons.append({key1: le})
-            if not le:
-                result = False
-        return result, json.dumps(reasons, indent=4)
-
-
-class MatchPolicy(Policy):
-    def __init__(self, arguments: Dict[str, List[Any]]):
-        super().__init__(False)
-        self.arguments = arguments
-
-    def validate(self, request: Request) -> Tuple[bool, str]:
-        result, reasons = True, []
-        for key, allowable in self.arguments.items():
-            value = hierarchical_dict_lookup(request.raw_request, key)
-            is_allowed = value in allowable
-            reasons.append({key: is_allowed})
-            if not is_allowed:
-                result = False
-        return result, json.dumps(reasons, indent=4)
-
 
 """
 A policy is an object that validates a request.
@@ -385,6 +37,83 @@ Formats:
 """
 
 
+class Policy:
+    def __init__(self, full_approval: bool = False):
+        self.full_approval = full_approval
+
+    @abstractmethod
+    def validate(self, request: Request) -> Tuple[bool, str]:
+        """
+        Validate a request against a policy
+        :param request: The request to validate
+        :return: Approved or not, and reason if failure
+        """
+        if not self.full_approval:
+            return False, "Base class policy without full approval auto rejects."
+        return True, "success"
+
+    def __str__(self):
+        return str(self.__class__.__name__)
+
+    def __call__(self, request: Request) -> Tuple[bool, str]:
+        return self.validate(request)
+
+
+class LogicalPolicy(Policy):
+    def __init__(self, cascaded_policies: Union[Dict, List[Union[str, Policy, List, Dict]]]):
+        super().__init__(False)
+        policies = []
+        if not isinstance(cascaded_policies, dict):
+            for p in cascaded_policies:
+                if isinstance(p, Policy):
+                    policies.append(p)
+                else:
+                    policies.append(PolicyFactory.get_policy_from_argument(p))
+        else:
+            policies = PolicyFactory.get_policy_from_dict(cascaded_policies, return_policy_list=True)
+        self.cascaded_policies = policies
+
+    def validate(self, request: Request) -> Tuple[bool]:
+        raise NotImplementedError("Server error. CascadePolicy is to be treated as abstract.")
+
+
+class AndPolicy(LogicalPolicy):
+    def validate(self, request: Request) -> Tuple[bool, str]:
+        """
+        Validated request against a list of cascaded policies
+        :param request:
+        :return:
+        """
+        result, reasons = True, []
+        for policy in self.cascaded_policies:
+            p_result, reason = policy.validate(request)
+            reason = json.decoder.JSONDecoder().decode(reason)
+            reasons.append({f"{str(policy)}": reason})
+            if not p_result:
+                result = False
+        return result, json.dumps(reasons, indent=4)
+
+
+class OrPolicy(LogicalPolicy):
+    def validate(self, request: Request) -> Tuple[bool, str]:
+        """
+        Validated request against a list of policies.
+        Only one policy must accept
+        :param request:
+        :return:
+        """
+        result, reasons = False, []
+        for policy in self.cascaded_policies:
+            p_result, reason = policy.validate(request)
+            reason = json.decoder.JSONDecoder().decode(reason)
+            reasons.append({f"{str(policy)}": reason})
+            if p_result:
+                result = True
+                break
+
+        return result, json.dumps(reasons, indent=4)
+
+
 class PolicyFactory:
     @staticmethod
     def create_full_approval_policy() -> Policy:
@@ -395,7 +124,7 @@ class PolicyFactory:
         return AndPolicy(arg)
 
     @staticmethod
-    def get_policy_from_dict(arg: Dict, return_policy_list: bool = False) -> Union[CascadedPolicy | List[Policy]]:
+    def get_policy_from_dict(arg: Dict, return_policy_list: bool = False) -> Union[LogicalPolicy | List[Policy]]:
         """
         :param arg:
         :param return_policy_list: If we should return the list of policies instead of the wrapped version.
