@@ -1,23 +1,30 @@
 from typing import Tuple, List
 
+from backend.policies.factory import PolicyFactory
 from backend.policies.policy import Policy
 from backend.requests.requests import Request
 from backend.utils.utils import validate_iso8601
+import json
 
 
 class TicketedPolicy(Policy):
     """
     High Level Policy
     """
+    def __init__(self):
+        super().__init__(False)
+        structure_policy = {
+            "required_headers": {"headers": ["request.quantity", "request.request_parameters"]},
+            "formatted_arguments": {
+                "request.quantity": "int",
+                "request.request_parameters": "dict"
+            }
+
+        }
+        self._structure_policy = PolicyFactory.get_policy_from_dict(structure_policy)
 
     def validate(self, request: Request) -> Tuple[bool, str]:
-        if "quantity" not in request.data:
-            return False, "Missing required header: quantity"
-        if "request_parameters" not in request.data:
-            return False, "Missing required header: request_parameters"
-        if not isinstance(request.data["request_parameters"], dict):
-            return False, "Expected request_headers to be a dictionary"
-        return True, "success"
+        return self._structure_policy(request)
 
 
 class TimeslotPolicy(Policy):
@@ -52,3 +59,18 @@ class TimeslotPolicy(Policy):
         if request.data["end_time"] <= request.data["start_time"]:
             return False, f"End time must be greater than start time."
         return True, "success"
+
+if __name__ == "__main__":
+
+    request = {
+        "entity": "fdsaf",
+        "request":{
+            "quantit": 2,
+            "request_parameters":{}
+        }
+    }
+
+    request = Request(json.dumps(request, indent=4).encode('utf-8'))
+
+    policy = TicketedPolicy()
+    print(policy(request)[1])

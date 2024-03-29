@@ -2,7 +2,7 @@ import json
 from typing import Dict, Union
 
 from backend.entity.entities import get_entity_class_from_type_string, Entity
-from backend.policies.policy import PolicyFactory
+from backend.policies.factory import PolicyFactory
 
 
 class GenerateEntities:

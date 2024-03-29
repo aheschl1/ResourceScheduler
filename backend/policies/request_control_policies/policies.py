@@ -24,23 +24,23 @@ class RequiredHeaderPolicy(Policy):
         :param request:
         :return:
         """
+        result, reasons = True, []
         for header in self.required_headers:
-            if '.' not in header:
-                if header not in request.headers:
-                    return False, f"Missing header {header}"
-            else:
-                # asked for say data.quantity to exist
-                try:
-                    hierarchical_dict_lookup(request.raw_request, header)
-                except KeyError:
-                    return False, f"Missing header {header}"
+            # asked for say data.quantity to exist
+            try:
+                hierarchical_dict_lookup(request.raw_request, header)
+            except KeyError:
+                result = False
+                reasons.append({header: "missing"})
+                continue
 
         if self.strict:
             for header in request.headers:
                 if header not in self.required_headers:
-                    return False, f"Header '{header}' not allowed"
+                    result = False
+                    reasons.append({header: "not allowed"})
 
-        return True, "success"
+        return result, json.dumps(reasons, indent=4)
 
 
 class ArgumentFormatPolicy(Policy):
@@ -51,17 +51,29 @@ class ArgumentFormatPolicy(Policy):
         super().__init__(False)
         self.requirements = requirements
         self._formats = {
-            "iso8601": validate_iso8601
+            "iso8601": validate_iso8601,
+            "dict": lambda x: isinstance(x, dict),
+            "str": lambda x: isinstance(x, str),
+            "int": lambda x: isinstance(x, int),
+            "float": lambda x: isinstance(x, float)
         }
 
     def validate(self, request: Request) -> Tuple[bool, str]:
         result, reasons = True, []
         for key, format_check in self.requirements.items():
-            value = hierarchical_dict_lookup(request.raw_request, key)
+            try:
+                value = hierarchical_dict_lookup(request.raw_request, key)
+            except KeyError:
+                result = False
+                reasons.append({key: "missing"})
+                continue
+
             try:
                 validator = self._formats[format_check]
             except KeyError:
-                return False, f"Unknown/Unimplemented format '{format_check}'"
+                result = False
+                reasons.append({key: f"Unknown/Unimplemented format '{format_check}'"})
+                continue
             in_format = validator(value)
             reasons.append({f"{key}": in_format})
             if not in_format:

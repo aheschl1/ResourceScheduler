@@ -24,7 +24,7 @@ class Request:
             self._request_data = Request._decode_request(request_data)
         except Exception as _:
             raise ValidationError("Poorly formatted request. Could not parse the request data.")
-        self._path_fragments = self._request_data["request"].split(".")
+        self._path_fragments = self._request_data["entity"].split(".")
         self._root_name = self._path_fragments[0]
         self._current_fragment = 0
 
@@ -41,9 +41,9 @@ class Request:
     def validate(self) -> True:
         if not self._request_data:
             raise ValidationError("Request data is None")
-        if "request" not in self._request_data:
-            raise ValidationError("Request path not specified in request")
-        if not _validate_request_path(self.request_path):
+        if "entity" not in self._request_data:
+            raise ValidationError("Entity path not specified in request")
+        if not _validate_request_path(self.entity_path):
             raise ValidationError("Requested path is not legal")
         return True
 
@@ -59,8 +59,8 @@ class Request:
         return next_route
 
     @property
-    def request_path(self):
-        return self._request_data["request"]
+    def entity_path(self):
+        return self._request_data["entity"]
 
     @property
     def root_name(self) -> str:
