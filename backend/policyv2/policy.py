@@ -66,13 +66,14 @@ class AtomicPolicy(Policy):
         :return:
         """
         current_read = ""
-        operation, c1, c2 = None, None, None
+        operation, c1, c2 = "", None, None
         for char in self._policy_literal:
             if char not in ["<", ">", "=", "~"]:
                 current_read += char
             else:
-                operation = char
-                c1 = Constant(current_read, extracted_regulars=self._extracted_regulars)
+                operation += char
+                if c1 is None:
+                    c1 = Constant(current_read, extracted_regulars=self._extracted_regulars)
                 current_read = ""
         c2 = Constant(current_read, extracted_regulars=self._extracted_regulars)
         return operation, c1, c2
@@ -100,6 +101,10 @@ class AtomicPolicy(Policy):
             except re.error:
                 match = False
             return match
+        elif self._operation == ">=":
+            return c1 >= c2
+        elif self._operation == "<=":
+            return c1 <= c2
 
     def __str__(self):
         return self._policy_literal
@@ -413,7 +418,12 @@ if __name__ == "__main__":
         f"Ax@['data']($x~\"{isoregex})\")": False,
         f"Ax@['data.*']($x~\"{isoregex})\")": True,
         f"Ax@['data.*', 'data']($x~\"{isoregex})\")": False,
-        f"Ax@['data.*']Ey@['a', 'b']([[$x~\"{isoregex})\"]&[$y~\"{isoregex})\"]]&($y>$x))": True
+        f"Ax@['data.*']Ey@['a', 'b']([[$x~\"{isoregex})\"]&[$y~\"{isoregex})\"]]&($y>$x))": True,
+        "(2<=3)": True,
+        "(3<=3)": True,
+        "(3>=3)": True,
+        "(4>=3)": True,
+        "(2>=3)": False
     }
 
     # the value a must be iso, and the value b must be iso, and b must be greater than a
