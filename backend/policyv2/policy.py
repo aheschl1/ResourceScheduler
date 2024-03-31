@@ -423,7 +423,8 @@ if __name__ == "__main__":
         "(3<=3)": True,
         "(3>=3)": True,
         "(4>=3)": True,
-        "(2>=3)": False
+        "(2>=3)": False,
+        "!(2>=3)": True
     }
 
     # the value a must be iso, and the value b must be iso, and b must be greater than a
@@ -440,7 +441,11 @@ if __name__ == "__main__":
         }
     }
     request2 = Request(json.dumps(request2).encode())
+    failed = []
     for literal2, expected in tests.items():
         policy2 = PolicyFactory.get_policy_from_literal(literal2)
         result2 = policy2.validate(request2)
-        print(result2 == expected)
+        if result2 != expected:
+            failed.append(literal2)
+            print(f"Failed: {literal2}")
+    print("Test cases passed!" if len(failed) == 0 else "")
