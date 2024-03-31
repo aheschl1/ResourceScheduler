@@ -34,3 +34,39 @@ def hierarchical_dict_lookup(dictionary: Dict[str, Any], key: str):
         except KeyError:
             raise KeyError(f"{key} not found in dictionary")
     return dictionary
+
+
+def hierarchical_keys(dictionary: Dict[str, Any], parent_key=None):
+    """
+    Looks up multi level keys.
+    for example:
+    {
+        hi: {
+            womp: womp2
+        }
+    }
+    returns hi and hi.womp
+    :param parent_key:
+    :param dictionary:
+    :return:
+    """
+    non_dict_keys = []
+    for key, value in dictionary.items():
+        current_key = key if parent_key is None else f"{parent_key}.{key}"
+        if isinstance(value, dict):
+            non_dict_keys.extend(hierarchical_keys(value, current_key))
+        non_dict_keys.append(current_key)
+    return non_dict_keys
+
+
+if __name__ == "__main__":
+    d = {
+        "a": "dw",
+        "b": {
+            "c": {
+                "d": "fsd",
+                "k": "dw"
+            }
+        }
+    }
+    print(hierarchical_keys(d))

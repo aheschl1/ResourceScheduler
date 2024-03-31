@@ -4,7 +4,7 @@ from abc import abstractmethod
 from typing import Tuple, Any, Dict
 
 from backend.requests.requests import Request
-from backend.utils.utils import hierarchical_dict_lookup
+from backend.utils.utils import hierarchical_dict_lookup, hierarchical_keys
 
 
 class Constant:
@@ -163,6 +163,48 @@ class NotPolicy(Policy):
         return f"!({str(self._policy)})"
 
 
+class ExistentialPolicy(Policy):
+    """
+    If a literal appears as ExA the literal given will be A.
+    We iterate through all KEYS at ALL DEPTHS if x = *v.
+    We iterate through all VALUES at ALL DEPTHS if x = $v.
+
+    If in A we encounter x, we replace with the key.
+    If in A we encounter $x, we will then be replacing with the value at key in the request
+    """
+
+    def __init__(self, literal: str, variable: str, extracted_regulars: Dict):
+        assert len(variable) == 1, "Variable of one length is required"
+        self._literal = literal
+        self._variable = variable
+        self._extracted_regulars = extracted_regulars
+
+    def _replace_variable(self, value: str) -> str:
+        permitted_next_to_variable = ["(", ")", ">", "<", "^", "$", "=", "~"]
+        i = 0
+        replaced = ""
+        while i < len(self._literal):
+            if self._literal[i] == self._variable:
+                # TODO this may have error capacity for index out of bounds
+                if self._literal[i + 1] in permitted_next_to_variable and self._literal[i - 1] in permitted_next_to_variable:
+                    # the variable is in a context where it can be replaced
+                    replaced += value
+                    i += 1
+                    continue
+            replaced += self._literal[i]
+            i += 1
+        return replaced
+
+    def validate(self, request: Request):
+        all_keys = hierarchical_keys(request.raw_request)
+        for key in all_keys:
+            literal_attempt = self._replace_variable(key)
+            policy = PolicyFactory.get_policy_from_literal(literal_attempt, **self._extracted_regulars)
+            if policy(request):
+                return True
+        return False
+
+
 class PolicyFactory:
 
     @staticmethod
@@ -173,7 +215,7 @@ class PolicyFactory:
         :param start_idx:
         :return:
         """
-        assert literal[start_idx] in ["[", "(", "{"], "_get_matching_bracket_index misused"
+        assert literal[start_idx] == "(", f"_get_matching_bracket_index misused with {literal}"
         level = 0
         i = start_idx
         while i < len(literal):
@@ -217,6 +259,8 @@ class PolicyFactory:
         Sentences must be surrounded by either {, ( or [.
         For example, A & B is invalid! [A]&[B] is invalid! [[A]&[B]] is valid.
 
+        MUST BE IN PRENEX FORM
+
         A negation !, can sit directly before a sentence, and be evaluated
 
         Since we handle regex, we treat portions in " " as regular expressions, and regular expressions MUST
@@ -235,30 +279,36 @@ class PolicyFactory:
                    .replace("[", "(")
                    .replace("]", ")"))
 
-        apply_negation = False
-        if literal[0] == "!":
+        apply_negation = 0
+        while literal[0] != "(":
             # we have the unary connective "not".
             # after the ! we expect to have a proper sentence
             # remember to apply a not, remove it, and move forward
-            apply_negation = True
+            # If the first character is E, then there is an existential request.
+            # Export the remaining literal with the variable to an existential policy
+            if literal[0] == "E":
+                variable = literal[1]
+                assert variable != "(", "Variable needed after E"
+                existential_policy = ExistentialPolicy(literal[2:], variable, extracted_regulars)
+                return existential_policy if apply_negation % 2 == 0 else NotPolicy(existential_policy)
+            apply_negation += 1
             literal = literal[1:]
 
         # we are expeccting that a well formatted sentence always starts with a bracket
         literal = literal[1:PolicyFactory._get_matching_bracket_index(literal, 0)]
-
         # we need to be careful not to consume regex!
         if PolicyFactory.isAtomic(literal):
             # this is a unit literal because there is no other sentence
             policy = AtomicPolicy(literal, extracted_regulars)
-            return policy if not apply_negation else NotPolicy(policy)
+            return policy if apply_negation % 2 == 0 else NotPolicy(policy)
         # now, we have guaranteed that there is some BINARY CONNECTIVE
         # [A] & [B] for example
         # literal at 0 is an opening brace, the character after the matching closing is the binary connective
         # everything after is the second literal
 
         # when getting the first literal, we need to be careful. We allow ! to sit on a bracket without being surrounded
-        start_idx = 0 if literal[0] == "(" else 1
-        first_literal_end = PolicyFactory._get_matching_bracket_index(literal, start_idx)
+        # start_idx = 0 if literal[0] == "(" else 1
+        first_literal_end = PolicyFactory._get_matching_bracket_index(literal, literal.find("("))
         # include ! if it is there
         first_literal = literal[0:first_literal_end + 1]
         connective = literal[first_literal_end + 1]
@@ -286,11 +336,16 @@ if __name__ == "__main__":
         f"[(($data.a~\"{isoregex}\") & ($data.b~\"{isoregex}\")) & ($data.b>$data.a)]": True,
         f"[(($data.a~\"{isoregex}\") & ($data.b~\"{isoregex}\")) & ($data.b<$data.a)]": False,
         f"[!($entity=a) | [(($data.a~\"{isoregex}\") & ($data.b~\"{isoregex}\")) & ($data.b>$data.a)]]": True,
-        f"[!($entity=a) & [(($data.a~\"{isoregex}\") & ($data.b~\"{isoregex}\")) & ($data.b>$data.a)]]": False,
+        f"[!!!($entity=a) & [(($data.a~\"{isoregex}\") & ($data.b~\"{isoregex}\")) & ($data.b>$data.a)]]": False,
         f"[$c=d]": False,
         f"![$c=d]": True,
-        "[$float>$int]":True,
-        "[$float<$int]": False
+        "[$float>$int]": True,
+        "[$float<$int]": False,
+        "Ex($x=2.2)": True,
+        "ExEt[($x=2.2)&($t=exact)]": True,
+        "!ExEt[($x=2.2)&($t=exact)]": False,
+        "Ex!Et[($x=2.2)&($t=exacto)]": True,
+        "!Ex!Et[($x=2.2)&($t=exacto)]": False
     }
 
     # the value a must be iso, and the value b must be iso, and b must be greater than a
@@ -300,6 +355,7 @@ if __name__ == "__main__":
         "b": "2024-12-13T12:12:12.001Z",
         "float": 2.2,
         "int": 2,
+        "exeact": "exact",
         "data": {
             "a": "2024-12-13T12:12:12.000Z",
             "b": "2024-12-13T12:12:12.001Z",
