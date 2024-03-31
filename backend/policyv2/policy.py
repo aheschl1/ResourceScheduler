@@ -1,7 +1,7 @@
 import json
 import re
 from abc import abstractmethod
-from typing import Tuple, Any, Dict
+from typing import Tuple, Any, Dict, List, Union
 
 from backend.requests.requests import Request
 from backend.utils.utils import hierarchical_dict_lookup, hierarchical_keys
@@ -163,21 +163,13 @@ class NotPolicy(Policy):
         return f"!({str(self._policy)})"
 
 
-class ExistentialPolicy(Policy):
-    """
-    If a literal appears as ExA the literal given will be A.
-    We iterate through all KEYS at ALL DEPTHS if x = *v.
-    We iterate through all VALUES at ALL DEPTHS if x = $v.
-
-    If in A we encounter x, we replace with the key.
-    If in A we encounter $x, we will then be replacing with the value at key in the request
-    """
-
-    def __init__(self, literal: str, variable: str, extracted_regulars: Dict):
+class QuantifierPolicy(Policy):
+    def __init__(self, literal: str, variable: str, extracted_regulars: Dict, bases: Union[List | None] = None):
         assert len(variable) == 1, "Variable of one length is required"
         self._literal = literal
         self._variable = variable
         self._extracted_regulars = extracted_regulars
+        self._bases = bases
 
     def _replace_variable(self, value: str) -> str:
         permitted_next_to_variable = ["(", ")", ">", "<", "^", "$", "=", "~"]
@@ -195,14 +187,71 @@ class ExistentialPolicy(Policy):
             i += 1
         return replaced
 
+    def _get_keys_for_check(self, request: Request) -> List[str]:
+        """
+        Given a list of keys, returns all recursive keys to check in the request.
+        If a key does not end in *, then we do not go recursively.
+
+        Example, data.a stays as data.a. data.a.* gives us data.a, as well as all children!
+        :param request:
+        :return:
+        """
+        all_keys = hierarchical_keys(request.raw_request) if self._bases is None else []
+        if self._bases is None:
+            return all_keys
+        for key in self._bases:
+            # TODO chance for index out of bounds
+            if key[-1] == "*" and key[-2] == ".":
+                key = key[:-2]
+                all_keys.extend(hierarchical_keys(hierarchical_dict_lookup(request.raw_request, key), parent_key=key))
+            else:
+                all_keys.append(key)
+        return all_keys
+
+
+    @abstractmethod
     def validate(self, request: Request):
-        all_keys = hierarchical_keys(request.raw_request)
+        ...
+
+
+class ExistentialPolicy(QuantifierPolicy):
+    """
+    If a literal appears as ExA the literal given will be A.
+    We iterate through all KEYS at ALL DEPTHS if x = *v.
+    We iterate through all VALUES at ALL DEPTHS if x = $v.
+
+    If in A we encounter x, we replace with the key.
+    If in A we encounter $x, we will then be replacing with the value at key in the request
+    """
+
+    def validate(self, request: Request):
+        all_keys = self._get_keys_for_check(request)
         for key in all_keys:
             literal_attempt = self._replace_variable(key)
             policy = PolicyFactory.get_policy_from_literal(literal_attempt, **self._extracted_regulars)
             if policy(request):
                 return True
         return False
+
+
+class UniversalPolicy(QuantifierPolicy):
+    """
+    If a literal appears as AxA the literal given will be A.
+    We iterate through all KEYS at ALL DEPTHS if x = *v.
+    We iterate through all VALUES at ALL DEPTHS if x = $v.
+
+    If in A we encounter x, we replace with the key.
+    If in A we encounter $x, we will then be replacing with the value at key in the request
+    """
+
+    def validate(self, request: Request):
+        all_keys = self._get_keys_for_check(request)
+        result = True
+        for key in all_keys:
+            literal_attempt = self._replace_variable(key)
+            policy = PolicyFactory.get_policy_from_literal(literal_attempt, **self._extracted_regulars)
+            result = result and policy(request)
+        return result
 
 
 class PolicyFactory:
@@ -286,11 +335,22 @@ class PolicyFactory:
             # remember to apply a not, remove it, and move forward
             # If the first character is E, then there is an existential request.
             # Export the remaining literal with the variable to an existential policy
-            if literal[0] == "E":
+            bases = None
+            if literal[0] in ["A", "E"]:
+                quantifier_policy = ExistentialPolicy if literal[0] == "E" else UniversalPolicy
+                if literal[2] == "@":
+                    assert literal[3] == "(", "With @ you must specify a list of keys or key families"
+                    # extract list version of bases
+                    bases = eval(literal[3:literal.find(")", 2)+1].replace("(", "[").replace(")", "]"))
                 variable = literal[1]
-                assert variable != "(", "Variable needed after E"
-                existential_policy = ExistentialPolicy(literal[2:], variable, extracted_regulars)
-                return existential_policy if apply_negation % 2 == 0 else NotPolicy(existential_policy)
+                assert variable != "(", "Variable needed on universal policy"
+                if bases is None:
+                    new_literal = literal[2:]
+                else:
+                    new_literal = literal[3 + len(str(bases).replace(" ", "")):]
+                quantifier_policy = quantifier_policy(new_literal, variable, extracted_regulars, bases)
+                return quantifier_policy if apply_negation % 2 == 0 else NotPolicy(quantifier_policy)
+
             apply_negation += 1
             literal = literal[1:]
 
@@ -345,20 +405,28 @@ if __name__ == "__main__":
         "ExEt[($x=2.2)&($t=exact)]": True,
         "!ExEt[($x=2.2)&($t=exact)]": False,
         "Ex!Et[($x=2.2)&($t=exacto)]": True,
-        "!Ex!Et[($x=2.2)&($t=exacto)]": False
+        "!Ex!Et[($x=2.2)&($t=exacto)]": False,
+        "AxEt[($t>$x)|(t=x)]": True,
+        "!AxEt[($t>$x)|(t=x)]": False,
+        "Ax(x>-1)": True,
+        "Ax($x>3)": False,
+        f"Ax@['data']($x~\"{isoregex})\")": False,
+        f"Ax@['data.*']($x~\"{isoregex})\")": True,
+        f"Ax@['data.*', 'data']($x~\"{isoregex})\")": False,
+        f"Ax@['data.*']Ey@['a', 'b']([[$x~\"{isoregex})\"]&[$y~\"{isoregex})\"]]&($y>$x))": True
     }
 
     # the value a must be iso, and the value b must be iso, and b must be greater than a
     request2 = {
         "entity": "a",
         "a": "2024-12-13T12:12:12.000Z",
-        "b": "2024-12-13T12:12:12.001Z",
+        "b": "2024-12-13T12:12:12.002Z",
         "float": 2.2,
         "int": 2,
         "exeact": "exact",
         "data": {
             "a": "2024-12-13T12:12:12.000Z",
-            "b": "2024-12-13T12:12:12.001Z",
+            "b": "2024-12-13T12:12:12.001Z"
         }
     }
     request2 = Request(json.dumps(request2).encode())
