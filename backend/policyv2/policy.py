@@ -424,7 +424,12 @@ if __name__ == "__main__":
         "(3>=3)": True,
         "(4>=3)": True,
         "(2>=3)": False,
-        "!(2>=3)": True
+        "!(2>=3)": True,
+        "(2-1=1)": True,
+        "Ex@['float', 'int']($x>3-2)": True,
+        "(3/2>3/3)": True,
+        "(3//2>3//3)": False,
+        "($float-$int>2)": True
     }
 
     # the value a must be iso, and the value b must be iso, and b must be greater than a
