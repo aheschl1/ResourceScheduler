@@ -1,1 +1,1 @@
-ssh -i "andrew.heschl.pem" ubuntu@ec2-3-96-54-124.ca-central-1.compute.amazonaws.com
+ssh -i "andrew.heschl.pem" ubuntu@3.99.170.19
