@@ -2,10 +2,12 @@
   "Entity_Name": "uofc",
   "Type": "Routing",
   "Policy": {
-    "required_headers": [
-      "user_attributes.ucid",
-      "user_attributes.undergrad"
-    ]
+    "required_headers": {
+      "headers": [
+        "user_attributes.ucid",
+        "user_attributes.undergrad"
+      ]
+    }
   },
   "Children": [
     {

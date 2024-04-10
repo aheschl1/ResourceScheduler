@@ -1,9 +1,13 @@
+import json
 from abc import abstractmethod
+from typing import Union, Dict
 
 import pandas as pd
 import os
 
-from backend.utils.utils import validate_iso8601
+from backend.json_policies.factory import PolicyFactory
+from backend.json_policies.policy import Policy
+from backend.utils.utils import validate_iso8601, hierarchical_keys, hierarchical_dict_lookup
 from utils.errors import NoTicketsAvailableError, DatabaseWriteError, InvalidRequestError, InvalidTimeslotError, OverlappingTimeslotError
 
 TEMPORARY_DATA_ROOT = "/home/andrewheschl/PycharmProjects/ResourceScheduler/backend/temp_sus_database"
@@ -12,8 +16,19 @@ if not os.path.exists(TEMPORARY_DATA_ROOT):
     TEMPORARY_DATA_ROOT = "/home/andrewheschl/PycharmProjects/ResourceScheduler/backend/temp_sus_database"
 
 
+class PolicyManagement:
+    @staticmethod
+    def lookup_policy_from_org_name(org_name: str, policy_name: str) -> Union[None, Policy]:
+        possible_entity_path = f"{TEMPORARY_DATA_ROOT}/organization_{org_name}/policies/{policy_name}.json"
+        if os.path.exists(possible_entity_path):
+            with open(possible_entity_path, "r") as file:
+                return PolicyFactory.get_policy_from_dict(json.load(file))
+        return None
+
+
 class DataManagement:
     def __init__(self, organization_name: str, entity_name: str):
+        self.headers_map = None
         self.organization_name = organization_name
         self.entity_name = entity_name
         # what resources have been handed out, and to who
@@ -24,14 +39,18 @@ class DataManagement:
         self.data_information = pd.read_csv(self.data_information_path)
 
     @abstractmethod
-    def register(self, **kwargs):
+    def register(self, data: Dict):
         # what data we expect
-        expected_headers = set(self.data_allocated.columns.tolist())
+        expected_headers_final = [x[8:] for x in self.data_information.columns.tolist() if x[0:8] == "header::"]
+        # we need to convert that to actual request headers location with the resources_info file!
+        headers_map = {header:self.data_information.iloc[0][f"header::{header}"] for header in expected_headers_final}
         # what data we have
-        available_headers = set(kwargs.keys())
+        expected_headers_fully_qualified = set(headers_map.values())
+        available_headers = set(hierarchical_keys(data))
         # manage discrepancy
-        if available_headers != expected_headers:
-            raise DatabaseWriteError(f"Tracking {expected_headers} but provided {available_headers}")
+        if not expected_headers_fully_qualified.issubset(available_headers):
+            raise DatabaseWriteError(f"Tracking {expected_headers_fully_qualified} but provided {available_headers}")
+        self.headers_map = headers_map
 
     def write_updates(self):
         self.data_information.to_csv(self.data_information_path, index=False)
@@ -42,26 +61,26 @@ class TicketDataManagement(DataManagement):
     def __init__(self, organization_name: str, entity_name: str):
         super().__init__(organization_name, entity_name)
 
-    def register(self, quantity, **kwargs):
+    def register(self, data: Dict):
         """
         Registers 'quantity' tickets
-        :param quantity: quantity of tickets
-        :param kwargs: headers in the database
+        :param data:
         :return:
         """
-        super().register(**kwargs)
-
+        super().register(data)
         # ensure sufficient resources
         tickets_available = self.data_information.available[0]
         tickets_available -= len(self.data_allocated)
-        if tickets_available < quantity:
-            raise NoTicketsAvailableError(f"Requested {quantity} tickets but only {tickets_available} are available.")
-        if quantity <= 0:
-            raise InvalidRequestError(f"You must request >= 0 tickets.")
+        requested_quantity = hierarchical_dict_lookup(data, self.headers_map["quantity"])
+        if tickets_available < requested_quantity:
+            raise NoTicketsAvailableError(f"Requested {requested_quantity} tickets but only {tickets_available} are available.")
+        if requested_quantity <= 0:
+            raise InvalidRequestError(f"You must request >= 0 tickets for a ticketed resource.")
 
         # update data table with new tickets, then write updates
+        data_arguments = {header:hierarchical_dict_lookup(data, self.headers_map[header]) for header in self.headers_map}
         self.data_allocated = pd.concat([
-            self.data_allocated, pd.DataFrame([pd.Series(kwargs)] * quantity, index=[i for i in range(quantity)])
+            self.data_allocated, pd.DataFrame([pd.Series(data_arguments)], index=[0])
         ]).reset_index(drop=True)
 
         self.write_updates()
@@ -73,17 +92,17 @@ class TimeslotDataManagement(DataManagement):
         self.data_information = pd.read_csv(self.data_information_path)
         self.data_allocated = pd.read_csv(self.data_allocated_path)
 
-    def register(self, **kwargs):
+    def register(self, data: Dict):
         """
         Registers a timeslot request in database.
         Allows a write request if the data_information has strict = False or there is no overlap
-        :param kwargs: The headers for request. Required start time and end time
+        :param data:
         :return:
         """
-        super().register(**kwargs)
+        super().register(data)
         try:
-            start_time = kwargs[self.data_information.start_key[0]]
-            end_time = kwargs[self.data_information.end_key[0]]
+            start_time = hierarchical_dict_lookup(data, self.data_information.start_key[0])
+            end_time = hierarchical_dict_lookup(data, self.data_information.end_key[0])
         except KeyError:
             raise DatabaseWriteError(f"Keyword argument for start time or end time is missing.")
 
@@ -93,6 +112,7 @@ class TimeslotDataManagement(DataManagement):
         if start_time >= end_time:
             raise InvalidTimeslotError(f"start time {start_time} is greater than or equal to end time {end_time}")
 
+        # TODO this functionality should be defined in the policy
         if self.data_information.strict[0]:
             overlap_conditions = [
                 # start is in the middle
@@ -116,8 +136,14 @@ class TimeslotDataManagement(DataManagement):
                 raise OverlappingTimeslotError(f"Requested slot overlaps with {overlapping_count} existing timeslots.")
         # ok
         # update data table with new slots, then write updates
+        data_arguments = {header:hierarchical_dict_lookup(data, self.headers_map[header]) for header in self.headers_map}
+        # we interpret start key and end key differently, but still take the info!
+        data_arguments.update({
+            self.data_information.start_key[0].split(".")[-1]: start_time,
+            self.data_information.end_key[0].split(".")[-1]: end_time
+        })
         self.data_allocated = pd.concat([
-            self.data_allocated, pd.DataFrame([pd.Series(kwargs)])
+            self.data_allocated, pd.DataFrame([pd.Series(data_arguments)])
         ]).reset_index(drop=True)
         self.write_updates()
 

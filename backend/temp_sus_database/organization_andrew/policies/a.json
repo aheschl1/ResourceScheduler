@@ -1,18 +1,17 @@
 {
-    "required_headers": ["data.start", "data.end"],
+    "required_headers": {
+        "strict": false,
+        "headers": ["data.quantity", "user.name", "user.email"]
+    },
     "formatted_arguments": {
-        "data.start": "iso8601",
-        "data.end": "iso8601"
+        "data.quantity": "int",
+        "user.name": "str",
+        "user.email": "str"
+    },
+    "greater_than_eq": {
+        "data.quantity": 1
     },
     "lesser_than_eq": {
-        "data.date": "2024-01-12T12:30:16.001Z"
-    },
-    "or": [
-        {"match": {
-            "hello": ["worlds", "world"]
-        }},
-        {"match": {
-            "hello": ["wor2ld", "world"]
-        }}
-    ]
+        "data.quantity": 1
+    }
 }

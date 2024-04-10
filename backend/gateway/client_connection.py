@@ -44,6 +44,7 @@ class ClientConnection:
             self._socket.sendall(response.get_bytes())
         except RejectedRequestError as rejection:
             # One of the entities said no
+            print(rejection)
             response = Response(
                 status_code=REJECTED_BY_ENTITY,
                 error=str(rejection)

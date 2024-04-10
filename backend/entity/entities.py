@@ -79,7 +79,7 @@ class SlottedEntity(Entity):
     @staticmethod
     def _manage_slot_request(request: Request) -> Dict:
         database_manager = TimeslotDataManagement(request.root_name, request.current_name)
-        database_manager.register(**request.data['request_parameters'])
+        database_manager.register(request.raw_request)
 
         return {
             "result": "ok"
@@ -100,7 +100,7 @@ class TicketedEntity(Entity):
     @staticmethod
     def _manage_ticket_request(request: Request) -> Dict:
         database_manager = TicketDataManagement(request.root_name, request.current_name)
-        database_manager.register(request.data['quantity'], **request.data['request_parameters'])
+        database_manager.register(data=request.raw_request)
 
         return {
             "result": "ok"

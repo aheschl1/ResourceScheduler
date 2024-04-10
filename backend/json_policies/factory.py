@@ -1,3 +1,4 @@
+import os.path
 from typing import Tuple, List, Union, Dict
 
 from backend.json_policies.difference_policies.policies import GreaterThanPolicy, GreaterThanEQPolicy, LesserThanPolicy, LesserThanEQPolicy
@@ -128,14 +129,22 @@ class PolicyFactory:
         return AndPolicy(policies) if not return_policy_list else policies
 
     @staticmethod
-    def get_policy_from_argument(arg: Union[str, Dict, List]) -> Policy:
+    def get_policy_from_argument(arg: Union[str, Dict, List], org_name=None) -> Policy:
+        if isinstance(arg, str) and org_name is not None:
+            """
+            If entity name is not none, and we received a string, try a lookup in the policy database
+            """
+            from backend.database_endpoints.data_management import PolicyManagement
+            lookup_policy = PolicyManagement.lookup_policy_from_org_name(org_name, arg)
+            if lookup_policy is not None:
+                return lookup_policy
         if isinstance(arg, str):
             return PolicyFactory.get_policy_from_name(arg)
         if isinstance(arg, list):
             return PolicyFactory.get_cascade_policy_from_list(arg)
         if isinstance(arg, dict):
             return PolicyFactory.get_policy_from_dict(arg)
-        raise NotImplementedError("Policy is invalid")
+        raise NotImplementedError(f"Policy is invalid: Could not recognize datatype/requested policy file.")
 
     @staticmethod
     def get_policy_from_name(name: str) -> Policy:
@@ -146,7 +155,7 @@ class PolicyFactory:
             "TicketedPolicy": TicketedPolicy()
         }
         if name not in mapping:
-            raise NotImplementedError("Policy is invalid")
+            raise NotImplementedError(f"Policy is invalid: {name} is not a pre-made policy.")
 
         return mapping[name]
 
