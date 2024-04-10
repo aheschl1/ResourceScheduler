@@ -50,7 +50,7 @@ class Policy:
 
 class AtomicPolicy(Policy):
     """
-    Evaluates atomic policies
+    Evaluates atomic json_policies
     """
 
     def __init__(self, policy_literal: str, extracted_regulars: Dict[str, str]):
@@ -112,7 +112,7 @@ class AtomicPolicy(Policy):
 
 class AndPolicy(Policy):
     """
-    Policy which asserts all policies are True
+    Policy which asserts all json_policies are True
     """
 
     def __init__(self, *policies: Policy):
