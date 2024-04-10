@@ -63,7 +63,7 @@ class TCPServer:
         else:
             raise NotImplementedError("Unsupported protocol")
         _socket = socket.socket(socket.AF_INET, socket_type)
-        _socket.bind((self._ip, self._port))
+        _socket.bind((self._ip, int(self._port)))
         return _socket
 
     def kill(self):
