@@ -1,0 +1,18 @@
+{
+    "required_headers": ["data.start", "data.end"],
+    "formatted_arguments": {
+        "data.start": "iso8601",
+        "data.end": "iso8601"
+    },
+    "lesser_than_eq": {
+        "data.date": "2024-01-12T12:30:16.001Z"
+    },
+    "or": [
+        {"match": {
+            "hello": ["worlds", "world"]
+        }},
+        {"match": {
+            "hello": ["wor2ld", "world"]
+        }}
+    ]
+}

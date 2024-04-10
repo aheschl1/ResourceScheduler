@@ -1,8 +1,8 @@
 import json
 from typing import Dict, Union
 
-from backend.routing.entity.entities import get_entity_class_from_type_string, Entity
-from backend.routing.entity.policy import PolicyFactory
+from backend.entity.entities import get_entity_class_from_type_string, Entity
+from backend.json_policies.factory import PolicyFactory
 
 
 class GenerateEntities:
@@ -19,7 +19,7 @@ class GenerateEntities:
         :param data:
         :return: Entity
         """
-        # TODO deal with policies
+        # TODO deal with json_policies
         parent_entity_name = data["Entity_Name"]
         parent_type = data["Type"]
         parent_children = data.get("Children", [])
