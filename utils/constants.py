@@ -1,5 +1,7 @@
-DEFAULT_IP = "127.0.0.1"
-DEFAULT_PORT = 6000
+import os
+
+DEFAULT_IP = os.environ.get("SERVER_IP", "127.0.0.1")
+DEFAULT_PORT = os.environ.get("SERVER_PORT", 6000)
 BUFFER_SIZE = 1024
 
 SUCCESS = 200
