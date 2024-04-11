@@ -16,6 +16,7 @@ class TCPClient:
             to_send = f.read()
             
         with self._socket as s:
+            print(self._ip, self._port)
             s.connect((self._ip, self._port))
             s.sendall(to_send.encode())
             data = s.recv(self._buffer_size)
