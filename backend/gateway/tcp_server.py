@@ -32,6 +32,7 @@ class TCPServer:
         Launches client connection off main process with a socket
         :return: None
         """
+        print(f"Listening on {self._ip}:{self._port}")
         with self._socket:
             self._socket.listen()  # syn request
             self._socket.settimeout(self._timeout)
