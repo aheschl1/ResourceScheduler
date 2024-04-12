@@ -39,20 +39,24 @@ class TCPServer:
         :return: None
         """
         print(f"Listening on {self._ip}:{self._port}")
-        with self._socket:
-            self._socket.listen()  # syn request
-            self._socket.settimeout(self._timeout)
-            while not self._kill:
-                try:
-                    connection, address = self._socket.accept()
-                except TimeoutError: continue
+        try:
+            with self._socket:
+                self._socket.listen()  # syn request
+                self._socket.settimeout(self._timeout)
+                while not self._kill:
+                    try:
+                        connection, address = self._socket.accept()
+                    except TimeoutError: continue
 
-                print(f"=====A process has connected to {address}=====")
-                communicator = ClientConnection(connection, address, buffer_size=TCPServer.buffer_size)
-                communicator_process = Process(
-                    target=communicator.start
-                )
-                communicator_process.start()
+                    print(f"=====A process has connected to {address}=====")
+                    communicator = ClientConnection(connection, address, buffer_size=TCPServer.buffer_size)
+                    communicator_process = Process(
+                        target=communicator.start
+                    )
+                    communicator_process.start()
+        except Exception as e:
+            print(f"Server crash: {e}")
+            self._socket.close()
 
         print("Server terminated")
 

@@ -37,6 +37,7 @@ class Response:
         header += "Server: Epic Resource Scheduler\r\n"
         header += f"Content-Length: {len(data)}\r\n"
         header += "Connection: close\r\n"
+        header += "Access-Control-Allow-Origin: *\r\n"
         header += "Content-Type: application/json\r\n"
         return f"{header}\r\n{data}".encode()
 
