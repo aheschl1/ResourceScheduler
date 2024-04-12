@@ -50,6 +50,7 @@ class TCPServer:
                     communicator_process.start()
                 except Exception as e:
                     connection.sendall(f"Server Error: {e}".encode())
+                    connection.close()
                     print(f"Server Error: {e}")
         print("Server terminated")
 

@@ -14,7 +14,7 @@ class ClientConnection:
         self._address = address
         self._buffer_size = buffer_size
 
-    def start(self):
+    def _do_task(self):
         """
         Starts communicating with client
         :return:
@@ -38,14 +38,12 @@ class ClientConnection:
             # find root node
             root = root_authority.get_root()
             # get result (maybe)
-            print(f"=====Process connected to {self._address} is processing=====")
             result = root(request_parser)
             # success !!
             response = Response(status_code=SUCCESS, data=result)
             self._socket.sendall(response.get_bytes())
         except RejectedRequestError as rejection:
             # One of the entities said no
-            print(rejection)
             response = Response(
                 status_code=REJECTED_BY_ENTITY,
                 error=str(rejection)
@@ -83,6 +81,13 @@ class ClientConnection:
             self._socket.sendall(response.get_bytes())
             return
 
-    def __del__(self):
+    def start(self):
+        self._do_task()
         self._socket.close()
+        print(f"=====Process connected to {self._address} is done=====")
 
+    def __del__(self):
+        try:
+            self._socket.close()
+        except Exception:
+            ...
