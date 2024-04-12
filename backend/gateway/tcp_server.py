@@ -10,6 +10,12 @@ from utils.constants import BUFFER_SIZE, DEFAULT_IP, DEFAULT_PORT
 
 
 class TCPServer:
+    """
+    The server will operate in HTTP
+    GET: Request to view utilized resources
+    POST: Request to allocate resource
+    PUT: Request to build new entity/organization
+    """
     buffer_size: int = BUFFER_SIZE
 
     def __init__(self,
@@ -43,15 +49,11 @@ class TCPServer:
 
                 print(f"=====A process has connected to {address}=====")
                 communicator = ClientConnection(connection, address, buffer_size=TCPServer.buffer_size)
-                try:
-                    communicator_process = Process(
-                        target=communicator.start
-                    )
-                    communicator_process.start()
-                except Exception as e:
-                    connection.sendall(f"Server Error: {e}".encode())
-                    connection.close()
-                    print(f"Server Error: {e}")
+                communicator_process = Process(
+                    target=communicator.start
+                )
+                communicator_process.start()
+
         print("Server terminated")
 
     def _instantiate_socket(self):
