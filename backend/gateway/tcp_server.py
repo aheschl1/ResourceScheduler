@@ -51,7 +51,6 @@ class TCPServer:
                 except Exception as e:
                     connection.sendall(f"Server Error: {e}".encode())
                     print(f"Server Error: {e}")
-                print(f"=====Process connected to {address} has ended=====")
         print("Server terminated")
 
     def _instantiate_socket(self):

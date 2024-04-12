@@ -38,6 +38,7 @@ class ClientConnection:
             # find root node
             root = root_authority.get_root()
             # get result (maybe)
+            print(f"=====Process connected to {self._address} is processing=====")
             result = root(request_parser)
             # success !!
             response = Response(status_code=SUCCESS, data=result)
