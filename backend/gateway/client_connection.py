@@ -14,31 +14,22 @@ class ClientConnection:
         self._address = address
         self._buffer_size = buffer_size
 
-    def _do_task(self):
-        """
-        Starts communicating with client
-        :return:
-        """
-        data = self._socket.recv(self._buffer_size)
-        print(f"Received {data.decode()}\nProcessing request")
-        if not data:
-            return
-        request_parser = Request(data)
+    def _post(self, request: Request):
         try:
             # check if request is even valid
-            request_parser.validate()
+            request.validate()
         except ValidationError as e:
             # invalid request
             response = Response(status_code=POOR_FORMAT, error=str(e))
             self._socket.sendall(response.get_bytes())
             return
 
-        root_authority = RootAuthority(request_parser)
+        root_authority = RootAuthority(request)
         try:
             # find root node
             root = root_authority.get_root()
             # get result (maybe)
-            result = root(request_parser)
+            result = root(request)
             # success !!
             response = Response(status_code=SUCCESS, data=result)
             self._socket.sendall(response.get_bytes())
@@ -81,10 +72,32 @@ class ClientConnection:
             self._socket.sendall(response.get_bytes())
             return
 
+    def _do_task(self):
+        """
+        Starts communicating with client
+        :return:
+        """
+        data = self._socket.recv(self._buffer_size)
+        print(f"Received {data.decode()}\nProcessing request")
+        if not data:
+            return
+        request_parser = Request(data)
+        method = request_parser.request_method
+        if method == "POST":
+            self._post(request_parser)
+        else:
+            raise NotImplementedError(f"Requested method {method} is not yet implemented :(")
+
     def start(self):
-        self._do_task()
+        try:
+            self._do_task()
+        except Exception as e:
+            response = Response(500, error=f"Server Error: {e}")
+            self._socket.sendall(response.get_bytes())
+            self._socket.close()
+            print(f"Server Error: {e}")
         self._socket.close()
-        print(f"=====Process connected to {self._address} is done=====")
+        print(f"=====Process connected to {self._address} is closed=====")
 
     def __del__(self):
         try:

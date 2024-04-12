@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, Tuple
 import json
 from utils.errors import ValidationError, BottomOfRequestError
 import re
@@ -20,6 +20,8 @@ def _validate_request_path(path: str) -> bool:
 
 class Request:
     def __init__(self, request_data: bytes):
+        raw_data = request_data.decode()
+        self.request_method, request_data = Request._decode_http(raw_data)
         try:
             self._request_data = Request._decode_request(request_data)
         except Exception as _:
@@ -29,14 +31,31 @@ class Request:
         self._current_fragment = 0
 
     @staticmethod
-    def _decode_request(req: bytes) -> Dict:
+    def _decode_http(raw_data: str) -> Tuple[str, str]:
+        lines = raw_data.split("\r\n")
+        # assert correct header line
+        top_headers = lines[0].split(" ")
+        if top_headers[1] != "/":
+            raise ValidationError("Server only supports root HTTP query.")
+        if top_headers[2] != "HTTP/1.1":
+            raise ValidationError("Only HTTP/1.1 is supported.")
+        # first line, first word is the request method
+        method = top_headers[0]
+        if method not in ["GET", "POST", "PUT"]:
+            raise ValidationError("Unsupported method. Use GET to query on resources, POST to register a resource, and PUT to create an entity/organization")
+
+        content = raw_data.split("\r\n\r\n")[-1]
+        return method, content
+
+    @staticmethod
+    def _decode_request(req: str) -> Dict:
         """
         Given bytes, returns the dictionary.
         Throws a json format error
         :param req:
         :return:
         """
-        return json.loads(req.decode())
+        return json.loads(req)
 
     def validate(self) -> True:
         if not self._request_data:
@@ -76,7 +95,7 @@ class Request:
 
     @property
     def current_name(self):
-        return self._path_fragments[self._current_fragment-1]
+        return self._path_fragments[self._current_fragment - 1]
 
     @property
     def headers(self):
