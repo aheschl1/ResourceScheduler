@@ -10,7 +10,8 @@ TEMPORARY_DATA_ROOT = "/home/andrewheschl/PycharmProjects/ResourceScheduler/back
 if not os.path.exists(TEMPORARY_DATA_ROOT):
     # MAURI PUT YOUR PATH HERE
     TEMPORARY_DATA_ROOT = "/home/andrewheschl/PycharmProjects/ResourceScheduler/backend/temp_sus_database"
-
+if not os.path.exists(TEMPORARY_DATA_ROOT):
+    TEMPORARY_DATA_ROOT = "/home/ubuntu/ResourceScheduler/backend/temp_sus_database"
 
 class RootAuthority:
     def __init__(self, request: Request):
