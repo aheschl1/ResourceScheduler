@@ -1,6 +1,7 @@
 import os.path
 from typing import Tuple, List, Union, Dict
 
+from backend.fol_policies.policy import FolPolicyFactory
 from backend.json_policies.difference_policies.policies import GreaterThanPolicy, GreaterThanEQPolicy, LesserThanPolicy, LesserThanEQPolicy
 from backend.json_policies.equality_policies.policies import EqualityPolicy, MatchPolicy, RegularExpressionPolicy
 from backend.json_policies.policy import Policy
@@ -121,7 +122,8 @@ class PolicyFactory:
             "lesser_than": LesserThanPolicy,
             "lesser_than_eq": LesserThanEQPolicy,
             "match": MatchPolicy,
-            "regex": RegularExpressionPolicy
+            "regex": RegularExpressionPolicy,
+            "fol": FolPolicyFactory.get_policy_from_literal
         }
 
         policies = []

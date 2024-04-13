@@ -233,7 +233,7 @@ class ExistentialPolicy(QuantifierPolicy):
         all_keys = self._get_keys_for_check(request)
         for key in all_keys:
             literal_attempt = self._replace_variable(key)
-            policy = PolicyFactory.get_policy_from_literal(literal_attempt, **self._extracted_regulars)
+            policy = FolPolicyFactory.get_policy_from_literal(literal_attempt, **self._extracted_regulars)
             if policy(request):
                 return True
         return False
@@ -254,12 +254,12 @@ class UniversalPolicy(QuantifierPolicy):
         result = True
         for key in all_keys:
             literal_attempt = self._replace_variable(key)
-            policy = PolicyFactory.get_policy_from_literal(literal_attempt, **self._extracted_regulars)
+            policy = FolPolicyFactory.get_policy_from_literal(literal_attempt, **self._extracted_regulars)
             result = result and policy(request)
         return result
 
 
-class PolicyFactory:
+class FolPolicyFactory:
 
     @staticmethod
     def _get_matching_bracket_index(literal: str, start_idx: int):
@@ -325,7 +325,7 @@ class PolicyFactory:
         # Extract the regular expressions into a dictionary to keep safety!
         # This will simplify future steps
         # ($a~"+{a}")->($a~^0)
-        literal, extracted_regulars = PolicyFactory._extract_regulars(literal, extracted_regulars)
+        literal, extracted_regulars = FolPolicyFactory._extract_regulars(literal, extracted_regulars)
         # clean the literal (remove spaces and replace brackets to ( and  ))
         literal = (literal.strip().replace(" ", "")
                    .replace("{", "(")
@@ -360,9 +360,9 @@ class PolicyFactory:
             literal = literal[1:]
 
         # we are expeccting that a well formatted sentence always starts with a bracket
-        literal = literal[1:PolicyFactory._get_matching_bracket_index(literal, 0)]
+        literal = literal[1:FolPolicyFactory._get_matching_bracket_index(literal, 0)]
         # we need to be careful not to consume regex!
-        if PolicyFactory.isAtomic(literal):
+        if FolPolicyFactory.isAtomic(literal):
             # this is a unit literal because there is no other sentence
             policy = AtomicPolicy(literal, extracted_regulars)
             return policy if apply_negation % 2 == 0 else NotPolicy(policy)
@@ -373,13 +373,13 @@ class PolicyFactory:
 
         # when getting the first literal, we need to be careful. We allow ! to sit on a bracket without being surrounded
         # start_idx = 0 if literal[0] == "(" else 1
-        first_literal_end = PolicyFactory._get_matching_bracket_index(literal, literal.find("("))
+        first_literal_end = FolPolicyFactory._get_matching_bracket_index(literal, literal.find("("))
         # include ! if it is there
         first_literal = literal[0:first_literal_end + 1]
         connective = literal[first_literal_end + 1]
         second_literal = literal[first_literal_end + 2:]
-        first_policy = PolicyFactory.get_policy_from_literal(first_literal, **extracted_regulars)
-        second_policy = PolicyFactory.get_policy_from_literal(second_literal, **extracted_regulars)
+        first_policy = FolPolicyFactory.get_policy_from_literal(first_literal, **extracted_regulars)
+        second_policy = FolPolicyFactory.get_policy_from_literal(second_literal, **extracted_regulars)
         if connective == "&":
             policy = AndPolicy(first_policy, second_policy)
         elif connective == "|":
@@ -448,7 +448,7 @@ if __name__ == "__main__":
     request2 = Request(json.dumps(request2).encode())
     failed = []
     for literal2, expected in tests.items():
-        policy2 = PolicyFactory.get_policy_from_literal(literal2)
+        policy2 = FolPolicyFactory.get_policy_from_literal(literal2)
         result2 = policy2.validate(request2)
         if result2 != expected:
             failed.append(literal2)
