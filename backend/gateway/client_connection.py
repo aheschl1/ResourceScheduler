@@ -13,11 +13,23 @@ from utils.errors import ValidationError, RejectedRequestError, RoutingError, Da
 
 class ClientConnection:
     def __init__(self, connection: socket.socket, address: str, buffer_size: int = 1024):
+        """
+        This class handles a single instance of a client request off the main server process.
+        If this ends up being run on the main process, get ready to die.
+        :param connection:
+        :param address:
+        :param buffer_size:
+        """
         self._socket = connection
         self._address = address
         self._buffer_size = buffer_size
 
     def _post(self, request: Request):
+        """
+        Handles the post request (registers resources)
+        :param request:
+        :return:
+        """
         try:
             # check if request is even valid
             request.validate()
