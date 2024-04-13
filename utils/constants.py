@@ -11,3 +11,10 @@ ROUTE_DNE = 404
 INVALID_REQUEST = 403
 UNKNOWN = 402
 
+TEMPORARY_DATA_ROOT = "/home/andrewheschl/PycharmProjects/ResourceScheduler/backend/temp_sus_database"
+if not os.path.exists(TEMPORARY_DATA_ROOT):
+    # MAURI PUT YOUR PATH HERE
+    TEMPORARY_DATA_ROOT = "/home/andrewheschl/PycharmProjects/ResourceScheduler/backend/temp_sus_database"
+if not os.path.exists(TEMPORARY_DATA_ROOT):
+    TEMPORARY_DATA_ROOT = "/home/ubuntu/Database"
+

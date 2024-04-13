@@ -5,14 +5,8 @@ from typing import Dict
 import pandas as pd
 from backend.json_policies.factory import PolicyFactory
 from backend.requests.requests import Request
+from utils.constants import TEMPORARY_DATA_ROOT
 from utils.errors import AssociationAlreadyExistsError, MalformedEntityError
-
-TEMPORARY_DATA_ROOT = "/home/andrewheschl/PycharmProjects/ResourceScheduler/backend/temp_sus_database"
-if not os.path.exists(TEMPORARY_DATA_ROOT):
-    # MAURI PUT YOUR PATH HERE
-    TEMPORARY_DATA_ROOT = "/home/andrewheschl/PycharmProjects/ResourceScheduler/backend/temp_sus_database"
-if not os.path.exists(TEMPORARY_DATA_ROOT):
-    TEMPORARY_DATA_ROOT = "/home/ubuntu/Database"
 
 
 class EntityEntryDataManagement:

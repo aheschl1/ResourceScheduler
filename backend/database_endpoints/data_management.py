@@ -9,14 +9,8 @@ from backend.json_policies.factory import PolicyFactory
 from backend.json_policies.policy import Policy
 from backend.requests.requests import Request
 from backend.utils.utils import validate_iso8601, hierarchical_keys, hierarchical_dict_lookup
+from utils.constants import TEMPORARY_DATA_ROOT
 from utils.errors import NoTicketsAvailableError, DatabaseWriteError, InvalidRequestError, InvalidTimeslotError, OverlappingTimeslotError
-
-TEMPORARY_DATA_ROOT = "/home/andrewheschl/PycharmProjects/ResourceScheduler/backend/temp_sus_database"
-if not os.path.exists(TEMPORARY_DATA_ROOT):
-    # MAURI PUT YOUR PATH HERE
-    TEMPORARY_DATA_ROOT = "/home/andrewheschl/PycharmProjects/ResourceScheduler/backend/temp_sus_database"
-if not os.path.exists(TEMPORARY_DATA_ROOT):
-    TEMPORARY_DATA_ROOT = "/home/ubuntu/Database"
 
 
 class PolicyManagement:

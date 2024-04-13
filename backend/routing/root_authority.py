@@ -4,14 +4,8 @@ import os
 import glob
 
 from backend.routing.generate_entities import GenerateEntities
+from utils.constants import TEMPORARY_DATA_ROOT
 from utils.errors import RoutingError
-
-TEMPORARY_DATA_ROOT = "/home/andrewheschl/PycharmProjects/ResourceScheduler/backend/temp_sus_database"
-if not os.path.exists(TEMPORARY_DATA_ROOT):
-    # MAURI PUT YOUR PATH HERE
-    TEMPORARY_DATA_ROOT = "/home/andrewheschl/PycharmProjects/ResourceScheduler/backend/temp_sus_database"
-if not os.path.exists(TEMPORARY_DATA_ROOT):
-    TEMPORARY_DATA_ROOT = "/home/ubuntu/Database"
 
 
 class RootAuthority:
