@@ -41,7 +41,7 @@ Formats:
 
 
 class LogicalPolicy(Policy):
-    def __init__(self, cascaded_policies: Union[Dict, List[Union[str, Policy, List, Dict]]]):
+    def __init__(self, cascaded_policies: Union[Dict, List[Union[str, Policy, List, Dict]]], org_name=None):
         super().__init__(False)
         policies = []
         if not isinstance(cascaded_policies, dict):
@@ -49,7 +49,7 @@ class LogicalPolicy(Policy):
                 if isinstance(p, Policy):
                     policies.append(p)
                 else:
-                    policies.append(PolicyFactory.get_policy_from_argument(p))
+                    policies.append(PolicyFactory.get_policy_from_argument(p, org_name))
         else:
             policies = PolicyFactory.get_policy_from_dict(cascaded_policies, return_policy_list=True)
         self.cascaded_policies = policies
@@ -101,8 +101,8 @@ class PolicyFactory:
         return Policy(full_approval=True)
 
     @staticmethod
-    def get_cascade_policy_from_list(arg: List) -> Policy:
-        return AndPolicy(arg)
+    def get_cascade_policy_from_list(arg: List, org_name=None) -> Policy:
+        return AndPolicy(arg, org_name)
 
     @staticmethod
     def get_policy_from_dict(arg: Dict, return_policy_list: bool = False) -> Union[LogicalPolicy | List[Policy]]:
@@ -144,7 +144,7 @@ class PolicyFactory:
         if isinstance(arg, str):
             return PolicyFactory.get_policy_from_name(arg)
         if isinstance(arg, list):
-            return PolicyFactory.get_cascade_policy_from_list(arg)
+            return PolicyFactory.get_cascade_policy_from_list(arg, org_name=org_name)
         if isinstance(arg, dict):
             return PolicyFactory.get_policy_from_dict(arg)
         raise NotImplementedError(f"Policy is invalid: Could not recognize datatype/requested policy file.")

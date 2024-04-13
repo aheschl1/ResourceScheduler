@@ -3,6 +3,7 @@ import re
 from abc import abstractmethod
 from typing import Tuple, Any, Dict, List, Union
 
+from backend.json_policies.policy import Policy
 from backend.requests.requests import Request
 from backend.utils.utils import hierarchical_dict_lookup, hierarchical_keys
 
@@ -35,25 +36,13 @@ class Constant:
         return self._literal
 
 
-class Policy:
-    """
-    A policy is a set of sentences of FOL
-    Given a request (a model of FOL) returns true iff |Request| is a superset of L(Policy) and Request |= Policy
-    """
-
-    @abstractmethod
-    def validate(self, request: Request) -> bool: ...
-
-    def __call__(self, request: Request) -> bool:
-        return self.validate(request)
-
-
 class AtomicPolicy(Policy):
     """
     Evaluates atomic json_policies
     """
 
     def __init__(self, policy_literal: str, extracted_regulars: Dict[str, str]):
+        super().__init__(False)
         # TODO assert literal is atomic!
         self._policy_literal = policy_literal
         self._extracted_regulars = extracted_regulars
@@ -116,6 +105,7 @@ class AndPolicy(Policy):
     """
 
     def __init__(self, *policies: Policy):
+        super().__init__(False)
         self._policies = policies
 
     def validate(self, request: Request):
@@ -137,6 +127,7 @@ class OrPolicy(Policy):
     """
 
     def __init__(self, *policies: Policy):
+        super().__init__(False)
         self._policies = policies
 
     def validate(self, request: Request):
@@ -159,6 +150,7 @@ class NotPolicy(Policy):
     """
 
     def __init__(self, policy: Policy):
+        super().__init__(False)
         self._policy = policy
 
     def validate(self, request: Request):
@@ -170,6 +162,7 @@ class NotPolicy(Policy):
 
 class QuantifierPolicy(Policy):
     def __init__(self, literal: str, variable: str, extracted_regulars: Dict, bases: Union[List | None] = None):
+        super().__init__(False)
         assert len(variable) == 1, "Variable of one length is required"
         self._literal = literal
         self._variable = variable
@@ -213,7 +206,6 @@ class QuantifierPolicy(Policy):
                 all_keys.append(key)
         return all_keys
 
-
     @abstractmethod
     def validate(self, request: Request):
         ...
@@ -233,7 +225,7 @@ class ExistentialPolicy(QuantifierPolicy):
         all_keys = self._get_keys_for_check(request)
         for key in all_keys:
             literal_attempt = self._replace_variable(key)
-            policy = FolPolicyFactory.get_policy_from_literal(literal_attempt, **self._extracted_regulars)
+            policy = FolPolicyFactory.get_policy_from_literal(literal_attempt, reason_wrapper=False, **self._extracted_regulars)
             if policy(request):
                 return True
         return False
@@ -254,9 +246,21 @@ class UniversalPolicy(QuantifierPolicy):
         result = True
         for key in all_keys:
             literal_attempt = self._replace_variable(key)
-            policy = FolPolicyFactory.get_policy_from_literal(literal_attempt, **self._extracted_regulars)
+            policy = FolPolicyFactory.get_policy_from_literal(literal_attempt, reason_wrapper=False, **self._extracted_regulars)
             result = result and policy(request)
         return result
+
+
+class FolWrapper(Policy):
+    def __init__(self, policy: Policy):
+        super().__init__(False)
+        self.policy = policy
+
+    def validate(self, request: Request) -> Tuple[bool, str]:
+        result = self.policy.validate(request)
+        if isinstance(result, tuple):
+            result = result[0]
+        return result, json.dumps("Sentence satisfied" if result else "Sentence not satisfied", indent=4)
 
 
 class FolPolicyFactory:
@@ -307,7 +311,7 @@ class FolPolicyFactory:
         return literal, extracted_regulars
 
     @staticmethod
-    def get_policy_from_literal(literal: str, **extracted_regulars) -> Policy:
+    def get_policy_from_literal(literal: str, reason_wrapper: bool = True, **extracted_regulars) -> Policy:
         """
         Recursively build a Policy object from a sentence literal string.
         Sentences must be surrounded by either {, ( or [.
@@ -317,8 +321,19 @@ class FolPolicyFactory:
 
         A negation !, can sit directly before a sentence, and be evaluated
 
+        Note:
+        1. $ is value at key
+        2. A is for all
+        3. E is exists
+        4. @ after A or E is the domain, otherwise domain is all key. Domain is a list. Treat keys with * recursively.
+        5. &, | are obvious
+        6. < > = are obvious <= >= are obvious
+        7. ~ is regex match
+        8 Regex must be in ""
+
         Since we handle regex, we treat portions in " " as regular expressions, and regular expressions MUST
         be surrounded to work.
+        :param reason_wrapper: wrap policy to retuen string and bool instead of just bool
         :param literal:
         :return:
         """
@@ -346,7 +361,7 @@ class FolPolicyFactory:
                 if literal[2] == "@":
                     assert literal[3] == "(", "With @ you must specify a list of keys or key families"
                     # extract list version of bases
-                    bases = eval(literal[3:literal.find(")", 2)+1].replace("(", "[").replace(")", "]"))
+                    bases = eval(literal[3:literal.find(")", 2) + 1].replace("(", "[").replace(")", "]"))
                 variable = literal[1]
                 assert variable != "(", "Variable needed on universal policy"
                 if bases is None:
@@ -354,7 +369,8 @@ class FolPolicyFactory:
                 else:
                     new_literal = literal[3 + len(str(bases).replace(" ", "")):]
                 quantifier_policy = quantifier_policy(new_literal, variable, extracted_regulars, bases)
-                return quantifier_policy if apply_negation % 2 == 0 else NotPolicy(quantifier_policy)
+                policy = quantifier_policy if apply_negation % 2 == 0 else NotPolicy(quantifier_policy)
+                return policy if not reason_wrapper else FolWrapper(policy)
 
             apply_negation += 1
             literal = literal[1:]
@@ -378,15 +394,16 @@ class FolPolicyFactory:
         first_literal = literal[0:first_literal_end + 1]
         connective = literal[first_literal_end + 1]
         second_literal = literal[first_literal_end + 2:]
-        first_policy = FolPolicyFactory.get_policy_from_literal(first_literal, **extracted_regulars)
-        second_policy = FolPolicyFactory.get_policy_from_literal(second_literal, **extracted_regulars)
+        first_policy = FolPolicyFactory.get_policy_from_literal(first_literal, reason_wrapper=False, **extracted_regulars)
+        second_policy = FolPolicyFactory.get_policy_from_literal(second_literal, reason_wrapper=False, **extracted_regulars)
         if connective == "&":
             policy = AndPolicy(first_policy, second_policy)
         elif connective == "|":
             policy = OrPolicy(first_policy, second_policy)
         else:
             raise ValueError("Invalid connective")
-        return policy if not apply_negation else NotPolicy(policy)
+        policy = policy if not apply_negation else NotPolicy(policy)
+        return policy if not reason_wrapper else FolWrapper(policy)
 
 
 if __name__ == "__main__":
