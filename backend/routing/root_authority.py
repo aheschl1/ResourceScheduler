@@ -13,6 +13,7 @@ if not os.path.exists(TEMPORARY_DATA_ROOT):
 if not os.path.exists(TEMPORARY_DATA_ROOT):
     TEMPORARY_DATA_ROOT = "/home/ubuntu/ResourceScheduler/backend/temp_sus_database"
 
+
 class RootAuthority:
     def __init__(self, request: Request):
         self._request = request

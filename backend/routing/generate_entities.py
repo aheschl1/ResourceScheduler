@@ -19,7 +19,6 @@ class GenerateEntities:
         :param data:
         :return: Entity
         """
-        # TODO deal with json_policies
         parent_entity_name = data["Entity_Name"]
         parent_type = data["Type"]
         parent_children = data.get("Children", [])

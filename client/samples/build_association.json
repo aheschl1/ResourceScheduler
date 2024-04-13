@@ -1,0 +1,44 @@
+{
+  "OrganizationName": "testAssoc",
+  "Policies": {
+    "root_auth": {
+      "required_headers": {
+        "headers": ["user.email", "user.id"]
+      }
+    },
+    "event_policy": {
+      "lesser_than": {
+        "data.quantity": 3
+      }
+    }
+  },
+  "Policy": "root_auth",
+  "Entities": [
+    {
+      "Entity_Name": "eventa",
+      "Type": "Ticketed",
+      "MaxAvailable": 100,
+      "Policy": "event_policy",
+      "Collect": {
+        "name": "user.name",
+        "email": "user.email",
+        "quantity": "data.quantity",
+        "level": "data.level"
+      },
+      "Children": [
+        {
+          "Entity_Name": "eventab",
+          "Type": "Ticketed",
+          "MaxAvailable": 100,
+          "Policy": "event_policy",
+          "Collect": {
+            "name": "user.name",
+            "email": "user.email",
+            "quantity": "data.quantity",
+            "level": "data.level"
+          }
+        }
+      ]
+    }
+  ]
+}

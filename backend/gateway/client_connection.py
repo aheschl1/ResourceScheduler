@@ -1,6 +1,7 @@
 import socket
 from typing import Dict
 
+from backend.database_endpoints.entity_creation import EntityEntryDataManagement
 from backend.gateway.response_formats import Response
 from backend.requests.requests import Request
 from backend.routing.root_authority import RootAuthority
@@ -72,6 +73,24 @@ class ClientConnection:
             self._socket.sendall(response.get_bytes())
             return
 
+    def _put(self, request: Request):
+        """
+        Request to create a new entity
+        :param request:
+        :return:
+        """
+        try:
+            EntityEntryDataManagement(request).build_new()
+            # success !!
+            response = Response(status_code=SUCCESS, data="Your association, entities, and relevant data tables have been created!")
+            self._socket.sendall(response.get_bytes())
+        except Exception as e:
+            response = Response(
+                status_code=POOR_FORMAT,
+                error=str(e)
+            )
+            self._socket.sendall(response.get_bytes())
+
     def _do_task(self):
         """
         Starts communicating with client
@@ -85,6 +104,8 @@ class ClientConnection:
         method = request_parser.request_method
         if method == "POST":
             self._post(request_parser)
+        elif method == "PUT":
+            self._put(request_parser)
         else:
             raise NotImplementedError(f"Requested method {method} is not yet implemented :(")
 

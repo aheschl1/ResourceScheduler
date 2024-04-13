@@ -11,10 +11,9 @@ class HTTPClient:
         self._socket: http.client.HTTPConnection = http.client.HTTPConnection(DEFAULT_IP, DEFAULT_PORT)
 
     def start(self):
-        with open("/home/andrewheschl/PycharmProjects/ResourceScheduler/client/samples/empty_request") as f:
+        with open("/home/andrewheschl/PycharmProjects/ResourceScheduler/client/samples/build_association.json") as f:
             to_send = f.read()
-
-        self._socket.request("POST", "/", body=to_send)
+        self._socket.request("PUT", "/", body=to_send)
         data = self._socket.getresponse()
         print(data.read().decode())
         self._socket.close()

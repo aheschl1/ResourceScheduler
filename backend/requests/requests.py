@@ -1,5 +1,6 @@
 from typing import Dict, Tuple
 import json
+
 from utils.errors import ValidationError, BottomOfRequestError
 import re
 
@@ -19,6 +20,9 @@ def _validate_request_path(path: str) -> bool:
 
 
 class Request:
+    """
+    Handles the validation and transfer of various request types
+    """
     def __init__(self, request_data: bytes):
         raw_data = request_data.decode()
         self.request_method, request_data = Request._decode_http(raw_data)
@@ -26,23 +30,26 @@ class Request:
             self._request_data = Request._decode_request(request_data)
         except Exception as _:
             raise ValidationError("Poorly formatted request. Could not parse the request data.")
-        self._path_fragments = self._request_data["entity"].split(".")
-        self._root_name = self._path_fragments[0]
-        self._current_fragment = 0
+        if self.request_method == "POST":
+            # This is for post features in a request. i.e. for traversing the tree
+            self._path_fragments = self._request_data["entity"].split(".")
+            self._root_name = self._path_fragments[0]
+            self._current_fragment = 0
 
     @staticmethod
     def _decode_http(raw_data: str) -> Tuple[str, str]:
         lines = raw_data.split("\r\n")
         # assert correct header line
-        top_headers = lines[0].split(" ")
-        if top_headers[1] != "/":
+        status_line = lines[0].split(" ")
+        if status_line[1] != "/":
             raise ValidationError("Server only supports root HTTP query.")
-        if top_headers[2] != "HTTP/1.1":
+        if status_line[2] != "HTTP/1.1":
             raise ValidationError("Only HTTP/1.1 is supported.")
         # first line, first word is the request method
-        method = top_headers[0]
+        method = status_line[0]
         if method not in ["GET", "POST", "PUT"]:
-            raise ValidationError("Unsupported method. Use GET to query on resources, POST to register a resource, and PUT to create an entity/organization")
+            raise ValidationError(
+                "Unsupported method. Use GET to query on resources, POST to register a resource, and PUT to create an entity/organization")
 
         content = raw_data.split("\r\n\r\n")[-1]
         return method, content
@@ -57,7 +64,7 @@ class Request:
         """
         return json.loads(req)
 
-    def validate(self) -> True:
+    def _post_validation(self):
         if not self._request_data:
             raise ValidationError("Request data is None")
         if "entity" not in self._request_data:
@@ -65,6 +72,18 @@ class Request:
         if not _validate_request_path(self.entity_path):
             raise ValidationError("Requested path is not legal")
         return True
+
+    def _put_validation(self) -> True:
+        # TODO actually validate!
+        return True
+
+    def validate(self) -> True:
+        if self.request_method == "POST":
+            return self._post_validation()
+        elif self.request_method == "PUT":
+            return self._put_validation()
+        else:
+            raise NotImplementedError("Requested method not implemented")
 
     def extract_next_route(self) -> str:
         """

@@ -73,3 +73,19 @@ class OverlappingTimeslotError(Exception):
 
     def __str__(self):
         return f'OverlappingTimeslotRequest: {self._message}'
+
+
+class AssociationAlreadyExistsError(Exception):
+    def __init__(self, message: str = ""):
+        self._message = message
+
+    def __str__(self):
+        return f'AssociationAlreadyExistsError: {self._message}'
+
+
+class MalformedEntityError(Exception):
+    def __init__(self, message: str = ""):
+        self._message = message
+
+    def __str__(self):
+        return f'MalformedEntityError: {self._message}'
