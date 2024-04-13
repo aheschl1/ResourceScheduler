@@ -17,7 +17,7 @@
     {
       "Entity_Name": "eventa",
       "Type": "Ticketed",
-      "MaxAvailable": 100,
+      "Available": 100,
       "Policy": "event_policy",
       "Collect": {
         "name": "user.name",
@@ -29,7 +29,7 @@
         {
           "Entity_Name": "eventab",
           "Type": "Ticketed",
-          "MaxAvailable": 100,
+          "Available": 100,
           "Policy": "event_policy",
           "Collect": {
             "name": "user.name",

@@ -51,8 +51,8 @@ class EntityEntryDataManagement:
             raise MalformedEntityError("Type of entity must be Ticketed, Routing, or Slotted.")
         if entity_definition["Type"] in ["Slotted", "Ticketed"] and "Collect" not in entity_definition:
             raise MalformedEntityError("Define what data is to be collected for your ticketed/slotted entities.")
-        if entity_definition["Type"] == "Ticketed" and "MaxAvailable" not in entity_definition:
-            raise MalformedEntityError("Must define MaxAvailable in ticketed entities.")
+        if entity_definition["Type"] == "Ticketed" and "Available" not in entity_definition:
+            raise MalformedEntityError("Must define Available in ticketed entities.")
         if entity_definition["Type"] == "Slotted" and ("StartKey" not in entity_definition or "EndKey" not in entity_definition):
             raise MalformedEntityError("Must define StartKey and EndKey in slotted entities.")
         if "Policy" in entity_definition:
@@ -81,7 +81,7 @@ class EntityEntryDataManagement:
         # Create the info sheet
         if type == "Ticketed":
             info_sheet = {
-                "max_available": [entity_definition["MaxAvailable"]]
+                "available": [entity_definition["Available"]]
             }
         else:
             info_sheet = {
@@ -152,7 +152,7 @@ class EntityEntryDataManagement:
             {
               "Entity_Name": "eventa",
               "Type": "Ticketed",
-              "MaxAvailable": 100,
+              "Available": 100,
               "Policy": "event_policy",
               "Collect": {
                 "name": "user.name",
