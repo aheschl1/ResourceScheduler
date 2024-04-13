@@ -1,10 +1,12 @@
 {
     "user":{
         "email": "ajheschl@gmail.com",
-        "name": "...."
+        "name": "....",
+        "id": 123456
     },
-    "entity": "andrew",
+    "entity": "testAssoc.eventa.eventab",
     "data":{
-        "quantity": 2
+        "quantity": 1,
+        "level": "basic"
     }
 }
