@@ -3,7 +3,7 @@ from typing import Union, Dict, List, Tuple, Any
 
 from backend.database_endpoints.data_management import TicketDataManagement, TimeslotDataManagement, DataQueryManagement
 from backend.requests.requests import Request, BottomOfRequestError
-from backend.json_policies.policy import Policy
+from backend.policies.policy import Policy
 from utils.errors import RoutingError, RejectedRequestError, InvalidRequestError
 
 

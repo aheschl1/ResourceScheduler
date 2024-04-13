@@ -1,7 +1,7 @@
 import json
 from typing import Dict, Any, Tuple
 
-from backend.json_policies.policy import Policy
+from backend.policies.policy import Policy
 from backend.requests.requests import Request
 from backend.utils.utils import hierarchical_dict_lookup
 

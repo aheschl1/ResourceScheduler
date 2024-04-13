@@ -3,7 +3,7 @@ import os
 import shutil
 from typing import Dict
 import pandas as pd
-from backend.json_policies.factory import PolicyFactory
+from backend.policies.factory import PolicyFactory
 from backend.requests.requests import Request
 from utils.constants import TEMPORARY_DATA_ROOT
 from utils.errors import AssociationAlreadyExistsError, MalformedEntityError

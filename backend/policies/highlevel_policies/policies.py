@@ -1,7 +1,7 @@
 from typing import Tuple, List
 
-from backend.json_policies.factory import PolicyFactory
-from backend.json_policies.policy import Policy
+from backend.policies.factory import PolicyFactory
+from backend.policies.policy import Policy
 from backend.requests.requests import Request
 from backend.utils.utils import validate_iso8601
 import json

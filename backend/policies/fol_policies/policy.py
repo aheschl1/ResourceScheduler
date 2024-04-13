@@ -3,7 +3,7 @@ import re
 from abc import abstractmethod
 from typing import Tuple, Any, Dict, List, Union
 
-from backend.json_policies.policy import Policy
+from backend.policies.policy import Policy
 from backend.requests.requests import Request
 from backend.utils.utils import hierarchical_dict_lookup, hierarchical_keys
 
@@ -38,7 +38,7 @@ class Constant:
 
 class AtomicPolicy(Policy):
     """
-    Evaluates atomic json_policies
+    Evaluates atomic policies
     """
 
     def __init__(self, policy_literal: str, extracted_regulars: Dict[str, str]):
@@ -101,7 +101,7 @@ class AtomicPolicy(Policy):
 
 class AndPolicy(Policy):
     """
-    Policy which asserts all json_policies are True
+    Policy which asserts all policies are True
     """
 
     def __init__(self, *policies: Policy):

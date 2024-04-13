@@ -5,8 +5,8 @@ from typing import Union, Dict, Tuple
 import pandas as pd
 import os
 
-from backend.json_policies.factory import PolicyFactory
-from backend.json_policies.policy import Policy
+from backend.policies.factory import PolicyFactory
+from backend.policies.policy import Policy
 from backend.requests.requests import Request
 from backend.utils.utils import validate_iso8601, hierarchical_keys, hierarchical_dict_lookup
 from utils.constants import TEMPORARY_DATA_ROOT
@@ -67,7 +67,6 @@ class DataQueryManagement:
         return results
 
 
-
 class DataManagement:
     def __init__(self, organization_name: str, entity_name: str):
         self.headers_map = None
@@ -85,7 +84,7 @@ class DataManagement:
         # what data we expect
         expected_headers_final = [x[8:] for x in self.data_information.columns.tolist() if x[0:8] == "header::"]
         # we need to convert that to actual request headers location with the resources_info file!
-        headers_map = {header:self.data_information.iloc[0][f"header::{header}"] for header in expected_headers_final}
+        headers_map = {header: self.data_information.iloc[0][f"header::{header}"] for header in expected_headers_final}
         # what data we have
         expected_headers_fully_qualified = set(headers_map.values())
         available_headers = set(hierarchical_keys(data))
@@ -120,7 +119,7 @@ class TicketDataManagement(DataManagement):
             raise InvalidRequestError(f"You must request >= 0 tickets for a ticketed resource.")
 
         # update data table with new tickets, then write updates
-        data_arguments = {header:hierarchical_dict_lookup(data, self.headers_map[header]) for header in self.headers_map}
+        data_arguments = {header: hierarchical_dict_lookup(data, self.headers_map[header]) for header in self.headers_map}
         self.data_allocated = pd.concat([
             self.data_allocated, pd.DataFrame([pd.Series(data_arguments)], index=[0])
         ]).reset_index(drop=True)
@@ -178,7 +177,7 @@ class TimeslotDataManagement(DataManagement):
                 raise OverlappingTimeslotError(f"Requested slot overlaps with {overlapping_count} existing timeslots.")
         # ok
         # update data table with new slots, then write updates
-        data_arguments = {header:hierarchical_dict_lookup(data, self.headers_map[header]) for header in self.headers_map}
+        data_arguments = {header: hierarchical_dict_lookup(data, self.headers_map[header]) for header in self.headers_map}
         # we interpret start key and end key differently, but still take the info!
         data_arguments.update({
             self.data_information.start_key[0].split(".")[-1]: start_time,

@@ -1,12 +1,10 @@
-import os.path
 from typing import Tuple, List, Union, Dict
 
-from backend.fol_policies.policy import FolPolicyFactory
-from backend.json_policies.difference_policies.policies import GreaterThanPolicy, GreaterThanEQPolicy, LesserThanPolicy, LesserThanEQPolicy
-from backend.json_policies.equality_policies.policies import EqualityPolicy, MatchPolicy, RegularExpressionPolicy
-from backend.json_policies.policy import Policy
-from backend.json_policies.request_control_policies.policies import RequiredHeaderPolicy, ArgumentFormatPolicy
-import json
+from backend.policies.fol_policies import FolPolicyFactory
+from backend.policies.difference_policies.policies import GreaterThanPolicy, GreaterThanEQPolicy, LesserThanPolicy, LesserThanEQPolicy
+from backend.policies.equality_policies.policies import EqualityPolicy, MatchPolicy, RegularExpressionPolicy
+from backend.policies.policy import Policy
+from backend.policies.request_control_policies.policies import RequiredHeaderPolicy, ArgumentFormatPolicy
 
 from backend.requests.requests import Request
 
@@ -61,7 +59,7 @@ class LogicalPolicy(Policy):
 class AndPolicy(LogicalPolicy):
     def validate(self, request: Request) -> Tuple[bool, str]:
         """
-        Validated request against a list of cascaded json_policies
+        Validated request against a list of cascaded policies
         :param request:
         :return:
         """
@@ -78,7 +76,7 @@ class AndPolicy(LogicalPolicy):
 class OrPolicy(LogicalPolicy):
     def validate(self, request: Request) -> Tuple[bool, str]:
         """
-        Validated request against a list of json_policies.
+        Validated request against a list of policies.
         Only one policy must accept
         :param request:
         :return:
@@ -108,7 +106,7 @@ class PolicyFactory:
     def get_policy_from_dict(arg: Dict, return_policy_list: bool = False) -> Union[LogicalPolicy | List[Policy]]:
         """
         :param arg:
-        :param return_policy_list: If we should return the list of json_policies instead of the wrapped version.
+        :param return_policy_list: If we should return the list of policies instead of the wrapped version.
         :return:
         """
         policy_lookup = {
@@ -151,7 +149,7 @@ class PolicyFactory:
 
     @staticmethod
     def get_policy_from_name(name: str) -> Policy:
-        from backend.json_policies.highlevel_policies.policies import TimeslotPolicy, TicketedPolicy
+        from backend.policies.highlevel_policies.policies import TimeslotPolicy, TicketedPolicy
         mapping = {
             "FullApproval": PolicyFactory.create_full_approval_policy(),
             "BasicTimeslot": TimeslotPolicy(),
