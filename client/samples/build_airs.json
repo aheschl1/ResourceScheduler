@@ -1,0 +1,29 @@
+{
+  "OrganizationName": "airs",
+  "Policies": {
+    "root_auth": {
+      "required_headers": {
+        "headers": ["user.email", "user.name"]
+      }
+    },
+    "event_policy": {
+      "match": {
+        "data.quantity": [1]
+      }
+    }
+  },
+  "Policy": "root_auth",
+  "Entities": [
+    {
+      "Entity_Name": "tensorflowWorkshops",
+      "Type": "Ticketed",
+      "Available": 300,
+      "Policy": "event_policy",
+      "Collect": {
+        "name": "user.name",
+        "email": "user.email",
+        "quantity": "data.quantity"
+      }
+    }
+  ]
+}
