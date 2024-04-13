@@ -11,10 +11,12 @@
                 {
                     "Entity_Name": "eventab",
                     "Type": "Ticketed",
-                    "Policy": ["event_policy",
+                    "Policy": [
+                        "event_policy",
                         {
                             "fol": "Ex@['user.id', 'user.email']($x~\"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Z|a-z]{2,7}\b\")"
-                        }],
+                        }
+                    ],
                     "Children": []
                 }
             ]
