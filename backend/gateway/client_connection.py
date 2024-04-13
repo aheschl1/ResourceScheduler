@@ -1,6 +1,8 @@
+import json
 import socket
 from typing import Dict
 
+from backend.database_endpoints.data_management import DataQueryManagement
 from backend.database_endpoints.entity_creation import EntityEntryDataManagement
 from backend.gateway.response_formats import Response
 from backend.requests.requests import Request
@@ -91,6 +93,25 @@ class ClientConnection:
             )
             self._socket.sendall(response.get_bytes())
 
+    def _get(self, request: Request):
+        """
+        Method for getting data related to an entity.
+        :param request:
+        :return:
+        """
+        try:
+            request.validate()
+            result = DataQueryManagement(request).query()
+            # success !!
+            response = Response(status_code=SUCCESS, data=json.dumps(result, indent=4))
+            self._socket.sendall(response.get_bytes())
+        except Exception as e:
+            response = Response(
+                status_code=POOR_FORMAT,
+                error=str(e)
+            )
+            self._socket.sendall(response.get_bytes())
+
     def _do_task(self):
         """
         Starts communicating with client
@@ -106,6 +127,8 @@ class ClientConnection:
             self._post(request_parser)
         elif method == "PUT":
             self._put(request_parser)
+        elif method == "GET":
+            self._get(request_parser)
         else:
             raise NotImplementedError(f"Requested method {method} is not yet implemented :(")
 

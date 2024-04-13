@@ -28,7 +28,8 @@ class GenerateEntities:
         return get_entity_class_from_type_string(parent_type)(
             parent_entity_name,
             PolicyFactory.get_policy_from_argument(parent_policy, org_name=association_name),
-            parent_children
+            parent_children,
+            association_name
         )
 
 

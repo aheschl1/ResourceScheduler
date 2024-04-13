@@ -30,7 +30,7 @@ class Request:
             self._request_data = Request._decode_request(request_data)
         except Exception as _:
             raise ValidationError("Poorly formatted request. Could not parse the request data.")
-        if self.request_method == "POST":
+        if self.request_method in ["POST", "GET"]:
             # This is for post features in a request. i.e. for traversing the tree
             self._path_fragments = self._request_data["entity"].split(".")
             self._root_name = self._path_fragments[0]
@@ -65,8 +65,6 @@ class Request:
         return json.loads(req)
 
     def _post_validation(self):
-        if not self._request_data:
-            raise ValidationError("Request data is None")
         if "entity" not in self._request_data:
             raise ValidationError("Entity path not specified in request")
         if not _validate_request_path(self.entity_path):
@@ -77,11 +75,23 @@ class Request:
         # TODO actually validate!
         return True
 
+    def _get_validation(self) -> True:
+        if "entity" not in self._request_data:
+            raise ValidationError("Entity path not specified in request.")
+        if "recursive" not in self._request_data:
+            raise ValidationError("Specify recursive request as true/false.")
+        if not isinstance(self._request_data["recursive"], bool):
+            raise ValidationError("Specify recursive request as true/false.")
+
     def validate(self) -> True:
+        if not self._request_data:
+            raise ValidationError("Request data is None")
         if self.request_method == "POST":
             return self._post_validation()
         elif self.request_method == "PUT":
             return self._put_validation()
+        elif self.request_method == "GET":
+            return self._get_validation()
         else:
             raise NotImplementedError("Requested method not implemented")
 

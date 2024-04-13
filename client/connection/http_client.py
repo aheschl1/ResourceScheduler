@@ -1,4 +1,5 @@
 import http.client
+import json
 
 from utils.constants import DEFAULT_IP, DEFAULT_PORT, BUFFER_SIZE
 
@@ -11,11 +12,11 @@ class HTTPClient:
         self._socket: http.client.HTTPConnection = http.client.HTTPConnection(DEFAULT_IP, DEFAULT_PORT)
 
     def start(self):
-        with open("/home/andrewheschl/PycharmProjects/ResourceScheduler/client/samples/andrew_request") as f:
+        with open("/home/andrewheschl/PycharmProjects/ResourceScheduler/client/samples/get_request.json") as f:
             to_send = f.read()
-        self._socket.request("POST", "/", body=to_send)
-        data = self._socket.getresponse()
-        print(data.read().decode())
+        self._socket.request("GET", "/", body=to_send)
+        data = self._socket.getresponse().read().decode()
+        print(json.loads(data)["data"])
         self._socket.close()
 
     def __del__(self):

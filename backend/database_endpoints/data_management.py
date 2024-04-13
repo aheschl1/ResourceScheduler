@@ -1,12 +1,13 @@
 import json
 from abc import abstractmethod
-from typing import Union, Dict
+from typing import Union, Dict, Tuple
 
 import pandas as pd
 import os
 
 from backend.json_policies.factory import PolicyFactory
 from backend.json_policies.policy import Policy
+from backend.requests.requests import Request
 from backend.utils.utils import validate_iso8601, hierarchical_keys, hierarchical_dict_lookup
 from utils.errors import NoTicketsAvailableError, DatabaseWriteError, InvalidRequestError, InvalidTimeslotError, OverlappingTimeslotError
 
@@ -26,6 +27,51 @@ class PolicyManagement:
             with open(possible_entity_path, "r") as file:
                 return PolicyFactory.get_policy_from_dict(json.load(file))
         return None
+
+
+class DataQueryManagement:
+    def __init__(self, request: Request):
+        raw_data = request.raw_request
+        request.validate()
+        self._request = request
+        self._entity = raw_data['entity']
+        self._recursive = raw_data['recursive']
+
+    @staticmethod
+    def read_data_from_entity_and_organization_name(org_name: str, entity_name: str) -> Tuple[Dict, Dict]:
+        """
+        Given an entity and organization, reads all data related to it.
+        :param org_name:
+        :param entity_name:
+        :return: Tuple of (info, expended) as dictionaries
+        """
+        info_frame = pd.read_csv(f"{TEMPORARY_DATA_ROOT}/organization_{org_name}/{entity_name}_resources_info.csv")
+        expended_frame = pd.read_csv(f"{TEMPORARY_DATA_ROOT}/organization_{org_name}/{entity_name}_resources_expended.csv")
+        return info_frame.to_dict(), expended_frame.to_dict()
+
+    def query(self) -> Dict:
+        """
+        Generates a large dictionary of all data.
+        :return:
+        """
+        from backend.routing.root_authority import RootAuthority
+
+        entity = RootAuthority(self._request).get_root()
+        all_entities = entity.get_children_of(self._entity, self._recursive)
+        # we now have the entities that we wish to question for data
+        results = {}
+        for current_entity in all_entities:
+            try:
+                data = current_entity.query_data()
+                results[current_entity.name] = {
+                    "info": data[0],
+                    "expended": data[1]
+                }
+            except InvalidRequestError as e:
+                results[current_entity.name] = str(e)
+
+        return results
+
 
 
 class DataManagement:
