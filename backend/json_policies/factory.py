@@ -2,7 +2,7 @@ import os.path
 from typing import Tuple, List, Union, Dict
 
 from backend.json_policies.difference_policies.policies import GreaterThanPolicy, GreaterThanEQPolicy, LesserThanPolicy, LesserThanEQPolicy
-from backend.json_policies.equality_policies.policies import EqualityPolicy, MatchPolicy
+from backend.json_policies.equality_policies.policies import EqualityPolicy, MatchPolicy, RegularExpressionPolicy
 from backend.json_policies.policy import Policy
 from backend.json_policies.request_control_policies.policies import RequiredHeaderPolicy, ArgumentFormatPolicy
 import json
@@ -120,7 +120,8 @@ class PolicyFactory:
             "greater_than_eq": GreaterThanEQPolicy,
             "lesser_than": LesserThanPolicy,
             "lesser_than_eq": LesserThanEQPolicy,
-            "match": MatchPolicy
+            "match": MatchPolicy,
+            "regex": RegularExpressionPolicy
         }
 
         policies = []
