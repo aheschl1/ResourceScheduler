@@ -1,6 +1,5 @@
 import socket
 
-from backend.utils.constants import TCP
 from utils.constants import DEFAULT_IP, DEFAULT_PORT, BUFFER_SIZE
 
 

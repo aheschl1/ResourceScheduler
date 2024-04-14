@@ -9,6 +9,7 @@ from backend.requests.requests import Request
 from backend.routing.root_authority import RootAuthority
 from utils.constants import *
 from utils.errors import ValidationError, RejectedRequestError, RoutingError, DatabaseWriteError, InvalidRequestError
+import traceback
 
 
 class ClientConnection:
@@ -24,7 +25,7 @@ class ClientConnection:
         self._address = address
         self._buffer_size = buffer_size
 
-    def _post(self, request: Request):
+    def _post(self, request: Request) -> Response:
         """
         Handles the post request (registers resources)
         :param request:
@@ -35,9 +36,7 @@ class ClientConnection:
             request.validate()
         except ValidationError as e:
             # invalid request
-            response = Response(status_code=POOR_FORMAT, error=str(e))
-            self._socket.sendall(response.get_bytes())
-            return
+            return Response(status_code=POOR_FORMAT, error=str(e))
 
         root_authority = RootAuthority(request)
         try:
@@ -46,48 +45,37 @@ class ClientConnection:
             # get result (maybe)
             result = root(request)
             # success !!
-            response = Response(status_code=SUCCESS, data=result)
-            self._socket.sendall(response.get_bytes())
+            return Response(status_code=SUCCESS, data=result)
         except RejectedRequestError as rejection:
             # One of the entities said no
-            response = Response(
+            return Response(
                 status_code=REJECTED_BY_ENTITY,
                 error=str(rejection)
             )
-            self._socket.sendall(response.get_bytes())
-            return
         except RoutingError as routing_error:
             # The path specified lead to a dead-end
-            response = Response(
+            return Response(
                 status_code=ROUTE_DNE,
                 error=str(routing_error)
             )
-            self._socket.sendall(response.get_bytes())
-            return
         except InvalidRequestError as invalid_request_error:
-            response = Response(
+            return Response(
                 status_code=INVALID_REQUEST,
                 error=str(invalid_request_error)
             )
-            self._socket.sendall(response.get_bytes())
-            return
         except DatabaseWriteError as database_write_error:
             # data provided couldn't be written
-            response = Response(
+            return Response(
                 status_code=POOR_FORMAT,
                 error=str(database_write_error)
             )
-            self._socket.sendall(response.get_bytes())
-            return
         except Exception as exception:
-            response = Response(
+            return Response(
                 status_code=UNKNOWN,
                 error=str(exception)
             )
-            self._socket.sendall(response.get_bytes())
-            return
 
-    def _put(self, request: Request):
+    def _put(self, request: Request) -> Response:
         """
         Request to create a new entity
         :param request:
@@ -96,16 +84,14 @@ class ClientConnection:
         try:
             EntityEntryDataManagement(request).build_new()
             # success !!
-            response = Response(status_code=SUCCESS, data="Your association, entities, and relevant data tables have been created!")
-            self._socket.sendall(response.get_bytes())
+            return Response(status_code=SUCCESS, data="Your association, entities, and relevant data tables have been created!")
         except Exception as e:
-            response = Response(
+            return Response(
                 status_code=POOR_FORMAT,
                 error=str(e)
             )
-            self._socket.sendall(response.get_bytes())
 
-    def _get(self, request: Request):
+    def _get(self, request: Request) -> Response:
         """
         Method for getting data related to an entity.
         :param request:
@@ -115,43 +101,40 @@ class ClientConnection:
             request.validate()
             result = DataQueryManagement(request).query()
             # success !!
-            response = Response(status_code=SUCCESS, data=json.dumps(result, indent=4))
-            self._socket.sendall(response.get_bytes())
+            return Response(status_code=SUCCESS, data=json.dumps(result, indent=4))
         except Exception as e:
-            response = Response(
+            return Response(
                 status_code=POOR_FORMAT,
                 error=str(e)
             )
-            self._socket.sendall(response.get_bytes())
 
-    def _do_task(self):
+    def _do_task(self) -> Response:
         """
         Starts communicating with client
         :return:
         """
         data = self._socket.recv(self._buffer_size)
         print(f"Received {data.decode()}\nProcessing request")
-        if not data:
-            return
         request_parser = Request(data)
         method = request_parser.request_method
         if method == "POST":
-            self._post(request_parser)
+            return self._post(request_parser)
         elif method == "PUT":
-            self._put(request_parser)
+            return self._put(request_parser)
         elif method == "GET":
-            self._get(request_parser)
+            return self._get(request_parser)
         else:
             raise NotImplementedError(f"Requested method {method} is not yet implemented :(")
 
     def start(self):
         try:
-            self._do_task()
+            response = self._do_task()
         except Exception as e:
             response = Response(500, error=f"Server Error: {e}")
-            self._socket.sendall(response.get_bytes())
-            self._socket.close()
             print(f"Server Error: {e}")
+        print(f"Response:\n{response.get_bytes().decode()}")
+        print(f"Errors: {traceback.format_exc()}")
+        self._socket.sendall(response.get_bytes())
         self._socket.close()
         print(f"=====Process connected to {self._address} is closed=====")
 

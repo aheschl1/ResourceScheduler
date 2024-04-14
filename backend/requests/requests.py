@@ -31,6 +31,8 @@ class Request:
         except Exception as _:
             raise ValidationError("Poorly formatted request. Could not parse the request data.")
         if self.request_method in ["POST", "GET"]:
+            if "entity" not in self._request_data:
+                raise ValidationError("Missing entity for your ")
             # This is for post features in a request. i.e. for traversing the tree
             self._path_fragments = self._request_data["entity"].split(".")
             self._root_name = self._path_fragments[0]
