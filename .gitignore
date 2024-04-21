@@ -1,3 +1,6 @@
+.idea
 *.pyc
 *.pem
 temp_sus_database
+**/__pycache
+res_env
