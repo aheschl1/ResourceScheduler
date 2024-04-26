@@ -5,7 +5,6 @@ from backend.policies.equality_policies.policies import EqualityPolicy, MatchPol
 from backend.policies.fol_policies.policy import FolPolicyFactory
 from backend.policies.policy import Policy
 from backend.policies.request_control_policies.policies import RequiredHeaderPolicy, ArgumentFormatPolicy
-import json
 from backend.requests.requests import Request
 
 """
@@ -135,6 +134,7 @@ class PolicyFactory:
             """
             If entity name is not none, and we received a string, try a lookup in the policy database
             """
+            # TODO remove
             from backend.database_endpoints.data_management import PolicyManagement
             lookup_policy = PolicyManagement.lookup_policy_from_org_name(org_name, arg)
             if lookup_policy is not None:
@@ -149,7 +149,7 @@ class PolicyFactory:
 
     @staticmethod
     def get_policy_from_name(name: str) -> Policy:
-        from backend.policies.highlevel_policies.policies import TimeslotPolicy, TicketedPolicy
+        from backend.policies.highlevel_policies import TimeslotPolicy, TicketedPolicy
         mapping = {
             "FullApproval": PolicyFactory.create_full_approval_policy(),
             "BasicTimeslot": TimeslotPolicy(),

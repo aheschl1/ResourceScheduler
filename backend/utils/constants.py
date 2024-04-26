@@ -1,1 +1,4 @@
-TCP = "tcp"
+GET = "GET"
+DELETE = "DELETE"
+PUT = "PUT"
+POST = "POST"

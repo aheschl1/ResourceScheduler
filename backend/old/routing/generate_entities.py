@@ -35,5 +35,5 @@ class GenerateEntities:
 
 if __name__ == "__main__":
     entity = GenerateEntities.generate_entity_from_json_path(
-        "/home/andrewheschl/PycharmProjects/ResourceScheduler/backend/temp_sus_database/organization_uofc/entity_definition.json")
+        "/backend/old/temp_sus_database/organization_uofc/entity_definition.json")
     print(entity)

@@ -24,6 +24,7 @@ class Request:
     Handles the validation and transfer of various request types
     """
     def __init__(self, request_data: bytes):
+        self.__dict__.update({"test":1})
         raw_data = request_data.decode()
         self.request_method, request_data = Request._decode_http(raw_data)
         try:

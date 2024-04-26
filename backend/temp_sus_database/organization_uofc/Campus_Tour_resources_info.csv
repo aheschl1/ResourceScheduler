@@ -1,2 +1,0 @@
-available,max_per_user,header::email,header::name,header::quantity
-100,1,user.email,user.name,data.quantity

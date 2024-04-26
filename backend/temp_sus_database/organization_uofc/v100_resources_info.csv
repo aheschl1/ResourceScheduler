@@ -1,2 +1,0 @@
-start_key,end_key,strict,header::user_email,header::user_id
-data.start_time,data.end_time,1,user_attributes.email,user_attributes.ucid

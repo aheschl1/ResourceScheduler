@@ -1,5 +1,5 @@
 import sys
-sys.path.append("/home/andrewheschl/PycharmProjects/ResourceScheduler")
+sys.path.append("/")
 sys.path.append("/home/ubuntu/ResourceScheduler")
 from multiprocessing import Process
 
