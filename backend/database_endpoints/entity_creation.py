@@ -197,8 +197,55 @@ class EntityEntryDataManagement:
             with open(f"{TEMPORARY_DATA_ROOT}/organization_{requested['OrganizationName']}/entity_definition.json", "w+") as file:
                 json.dump(entity_definition, file, indent=4)
             return True
-
         except Exception as e:
             # Clean out failed build, and re-raise the exception
             EntityEntryDataManagement._deallocate_new_association(requested['OrganizationName'])
             raise e
+
+    def update_assoc(self) -> bool:
+        """
+        add an entity to existing association
+        :return:
+        """
+        requested = self._request.raw_request
+        # Assert that the root name exists
+        if not os.path.exists(f"{TEMPORARY_DATA_ROOT}/organization_{requested['OrganizationName']}"):
+            raise AssociationAlreadyExistsError(f"Organization {requested['OrganizationName']} does not yet exist.")
+        if os.path.exists(f"{TEMPORARY_DATA_ROOT}/organization_{requested['OrganizationName']}/{requested['Entity_Name']}_resources_info.csv"):
+            raise AssociationAlreadyExistsError("Requested entity already exists.")
+        # Check on entities
+        EntityEntryDataManagement._validate_valid_entity_create_request(requested, requested['OrganizationName'])
+        # If we get here, all entities and policies are valid! Wonderful.
+        # Now build the fucking tree - and the datasets while we are at it.
+        current_assoc_state = None
+        with open(f"{TEMPORARY_DATA_ROOT}/organization_{requested['OrganizationName']}/entity_definition.json", "r") as file:
+            current_assoc_state = json.load(file)
+
+        def recursive_build_entity_definition(current_definition, entity_at_level) -> Dict:
+            """
+            Builds the tree + generates all required data sheets
+            :param current_definition:
+            :param entity_at_level:
+            :return:
+            """
+            if os.path.exists(f"{TEMPORARY_DATA_ROOT}/organization_{requested['OrganizationName']}/{entity_at_level['Entity_Name']}_resources_info.csv"):
+                raise AssociationAlreadyExistsError("Requested entity already exists. We need to fix this (a.b cannot coexist with b)")
+            if "Collect" in entity_at_level:
+                EntityEntryDataManagement._generate_data_sheet(entity_at_level, requested['OrganizationName'])
+            entity = {
+                "Entity_Name": entity_at_level["Entity_Name"],
+                "Type": entity_at_level["Type"],
+                "Policy": entity_at_level.get("Policy", "FullApproval"),
+                "Children": []
+            }
+            for child in entity_at_level.get("Children", []):
+                entity = recursive_build_entity_definition(entity, child)
+            current_definition["Children"].append(entity)
+            return current_definition
+
+        entity_definition = recursive_build_entity_definition(current_assoc_state, requested)
+        # Save the entity definition
+        # fuckkkkkkkkkkkkk
+        with open(f"{TEMPORARY_DATA_ROOT}/organization_{requested['OrganizationName']}/entity_definition.json", "w+") as file:
+            json.dump(entity_definition, file, indent=4)
+        return True

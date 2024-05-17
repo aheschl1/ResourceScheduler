@@ -47,9 +47,10 @@ class Request:
             raise ValidationError("Only HTTP/1.1 is supported.")
         # first line, first word is the request method
         method = status_line[0]
-        if method not in ["GET", "POST", "PUT"]:
+        if method not in ["GET", "POST", "PUT", "PATCH"]:
             raise ValidationError(
-                "Unsupported method. Use GET to query on resources, POST to register a resource, and PUT to create an entity/organization")
+                "Unsupported method. Use GET to query on resources, POST to register a resource, "
+                "PUT to create an entity/organization, and PATCH to add an entity to an existing organization")
 
         content = raw_data.split("\r\n\r\n")[-1]
         return method, content

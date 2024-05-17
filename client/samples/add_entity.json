@@ -1,0 +1,27 @@
+{
+  "OrganizationName": "testAssoc",
+  "Entity_Name": "newEntity44",
+  "Policy": "root_auth",
+  "Type": "Ticketed",
+  "Available": 100,
+  "Collect": {
+    "name": "user.name",
+    "email": "user.email",
+    "quantity": "data.quantity",
+    "level": "data.level"
+  },
+  "Children": [
+    {
+      "Entity_Name": "newEntity2",
+      "Type": "Ticketed",
+      "Available": 100,
+      "Policy": "event_policy",
+      "Collect": {
+        "name": "user.name",
+        "email": "user.email",
+        "quantity": "data.quantity",
+        "level": "data.level"
+      }
+    }
+  ]
+}

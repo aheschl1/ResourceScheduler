@@ -12,9 +12,9 @@ class HTTPClient:
         self._socket: http.client.HTTPConnection = http.client.HTTPConnection(DEFAULT_IP, DEFAULT_PORT)
 
     def start(self):
-        with open("/home/andrewheschl/PycharmProjects/ResourceScheduler/client/samples/andrew_request") as f:
+        with open("/home/andrewheschl/PycharmProjects/ResourceScheduler/client/samples/add_entity.json") as f:
             to_send = f.read()
-        self._socket.request("POST", "/", body=to_send)
+        self._socket.request("PATCH", "/", body=to_send)
         data = self._socket.getresponse().read().decode()
         print(json.loads(data))
         self._socket.close()

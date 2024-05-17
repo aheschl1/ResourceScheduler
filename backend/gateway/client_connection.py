@@ -9,6 +9,7 @@ from backend.requests.requests import Request
 from backend.routing.root_authority import RootAuthority
 from utils.constants import *
 from utils.errors import ValidationError, RejectedRequestError, RoutingError, DatabaseWriteError, InvalidRequestError
+import traceback
 
 
 class ClientConnection:
@@ -105,6 +106,24 @@ class ClientConnection:
             )
             self._socket.sendall(response.get_bytes())
 
+    def _patch(self, request: Request):
+        """
+        Request to create a new entity in existing association
+        :param request:
+        :return:
+        """
+        try:
+            EntityEntryDataManagement(request).update_assoc()
+            # success !!
+            response = Response(status_code=SUCCESS, data="Your association, entities, and relevant data tables have been created!")
+            self._socket.sendall(response.get_bytes())
+        except Exception as e:
+            response = Response(
+                status_code=POOR_FORMAT,
+                error=str(e)
+            )
+            self._socket.sendall(response.get_bytes())
+
     def _get(self, request: Request):
         """
         Method for getting data related to an entity.
@@ -141,6 +160,8 @@ class ClientConnection:
             self._put(request_parser)
         elif method == "GET":
             self._get(request_parser)
+        elif method == "PATCH":
+            self._patch(request_parser)
         else:
             raise NotImplementedError(f"Requested method {method} is not yet implemented :(")
 
@@ -151,6 +172,7 @@ class ClientConnection:
             response = Response(500, error=f"Server Error: {e}")
             self._socket.sendall(response.get_bytes())
             self._socket.close()
+            traceback.print_exc()
             print(f"Server Error: {e}")
         self._socket.close()
         print(f"=====Process connected to {self._address} is closed=====")

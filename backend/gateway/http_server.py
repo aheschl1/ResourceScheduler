@@ -7,6 +7,7 @@ from backend.gateway.client_connection import ClientConnection
 from backend.utils.constants import *
 import socket
 from utils.constants import BUFFER_SIZE, DEFAULT_IP, DEFAULT_PORT
+import traceback
 
 
 class TCPServer:
@@ -15,6 +16,7 @@ class TCPServer:
     GET: Request to view utilized resources
     POST: Request to allocate resource
     PUT: Request to build new entity/organization
+    PATCH: Add entity to organization
     """
     buffer_size: int = BUFFER_SIZE
 
@@ -56,6 +58,7 @@ class TCPServer:
                     communicator_process.start()
         except Exception as e:
             print(f"Server crash: {e}")
+            traceback.print_exc()
             self._socket.close()
 
         print("Server terminated")
