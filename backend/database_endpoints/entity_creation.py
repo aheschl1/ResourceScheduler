@@ -204,7 +204,7 @@ class EntityEntryDataManagement:
 
     def update_assoc(self) -> bool:
         """
-        add a entity to existing association
+        add an entity to existing association
         :return:
         """
         requested = self._request.raw_request
