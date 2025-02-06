@@ -1,1 +1,0 @@
-ssh -i "andrew.heschl.pem" ubuntu@3.99.170.19
